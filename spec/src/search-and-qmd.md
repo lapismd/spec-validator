@@ -22,11 +22,11 @@ QMD is a local discovery cache over canonical Markdown. It is not an authority a
 
 ## SV-QMD-002 — Host and fallback
 
-**Requirement.** `@tobilu/qmd` MUST remain an optional peer dependency, and a missing binary or ABI mismatch MUST print an `rg` fallback instead of pretending the index is authoritative.
+**Requirement.** `@tobilu/qmd` MUST remain an optional peer dependency, and a missing binary, missing native binding, or ABI mismatch MUST print an `rg` fallback instead of pretending the index is authoritative.
 
 ### Acceptance details
 
-- The wrapper MUST resolve the consumer-local `node_modules/.bin/qmd`.
+- The wrapper MUST resolve the consumer-local `node_modules/.bin/qmd` and capture its stdout and stderr.
 - A Node ABI mismatch MUST tell the operator to reinstall under the active Node version.
+- A missing native binding MUST tell the operator to approve `better-sqlite3` and `node-llama-cpp` in the root pnpm config and reinstall.
 - The fallback MUST be `rg -n -i --glob '*.md' '<query>' spec/src`.
-- QMD MUST NOT be added to workspace package manifests as a runtime dependency.

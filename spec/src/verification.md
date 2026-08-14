@@ -11,6 +11,7 @@
 | SV-ARCH-001 | Implemented | `package.json` bin; `src/cli.ts`; `src/config.ts` |
 | SV-ARCH-002 | Implemented | `src/tracked-files.ts` |
 | SV-ARCH-003 | Implemented | `src/types.ts`; `src/commands/validate.ts` |
+| SV-ARCH-004 | Implemented | `package.json` `pnpm.onlyBuiltDependencies` |
 | SV-CFG-001 | Implemented | `src/config.ts`; `src/presets.ts` |
 | SV-CFG-002 | Implemented | `src/config.ts`; `src/commands/validate.ts` |
 | SV-CFG-003 | Implemented | preset `ruleIds`; `src/config.ts` |
@@ -23,5 +24,5 @@
 | SV-DOC-002 | Implemented | `src/commands/doctor.ts` |
 | SV-DOC-003 | Implemented | `src/commands/doctor.ts` `--fix` |
 | SV-QMD-001 | Implemented | `src/commands/search.ts`; `.qmd/index.yml` |
-| SV-QMD-002 | Implemented | `src/commands/search.ts` fallback |
+| SV-QMD-002 | Implemented | `src/commands/search.ts` fallback and native-binding classification |
 | SV-SKL-001 | Implemented | `src/commands/skill.ts`; `skill/spec-validator/SKILL.md` |

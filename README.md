@@ -12,7 +12,8 @@ pnpm exec spec-validator init --preset design-core
 ```
 
 `@tobilu/qmd` is an optional peer for `search` and `index`. Keep it as a root
-development dependency when you enable QMD.
+development dependency when you enable QMD, and approve `better-sqlite3` and
+`node-llama-cpp` in `pnpm.onlyBuiltDependencies` so the local index can open.
 
 ## Commands
 

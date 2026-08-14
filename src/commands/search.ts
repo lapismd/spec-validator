@@ -30,10 +30,57 @@ function outputOf(result: {
   return [result.stdout, result.stderr, result.error?.message].filter(Boolean).join("\n");
 }
 
-export function looksLikeAbiMismatch(result: { stdout?: string | null; stderr?: string | null; error?: Error }): boolean {
+export function looksLikeAbiMismatch(result: {
+  stdout?: string | null;
+  stderr?: string | null;
+  error?: Error;
+}): boolean {
   return /NODE_MODULE_VERSION|different Node\.js version|ERR_DLOPEN_FAILED|Module did not self-register|compiled against.*Node/i.test(
     outputOf(result),
   );
+}
+
+export function looksLikeMissingNativeBinding(result: {
+  stdout?: string | null;
+  stderr?: string | null;
+  error?: Error;
+}): boolean {
+  return /Could not locate the bindings file|better_sqlite3\.node|Cannot find module ['"]better-sqlite3|node-llama-cpp/i.test(
+    outputOf(result),
+  );
+}
+
+export function nativeModuleAdvice(result: {
+  stdout?: string | null;
+  stderr?: string | null;
+  error?: Error;
+}): string | undefined {
+  if (looksLikeAbiMismatch(result)) {
+    return `QMD native modules do not match the active Node ABI ${process.versions.modules}; run pnpm install --force under the active Node version.`;
+  }
+  if (looksLikeMissingNativeBinding(result)) {
+    return "QMD native modules are not built; approve better-sqlite3 and node-llama-cpp in pnpm.onlyBuiltDependencies, then run pnpm install.";
+  }
+  return undefined;
+}
+
+function reportNativeOrFallback(
+  reporter: Reporter,
+  result: {
+    stdout?: string | null;
+    stderr?: string | null;
+    error?: Error;
+  },
+  query?: string,
+): void {
+  const advice = nativeModuleAdvice(result);
+  if (advice) {
+    reporter.writeError(advice);
+  } else {
+    const output = outputOf(result).trim();
+    if (output) reporter.writeError(output);
+  }
+  reporter.writeError(fallback(query));
 }
 
 export async function searchCommand(
@@ -80,7 +127,7 @@ export async function searchCommand(
     spawnSync(binary, args, {
       cwd: repoRoot,
       encoding: "utf8",
-      stdio: json ? ["ignore", "pipe", "pipe"] : "inherit",
+      stdio: ["ignore", "pipe", "pipe"],
       env: { ...process.env, PWD: repoRoot },
       shell: process.platform === "win32",
     });
@@ -88,12 +135,7 @@ export async function searchCommand(
   const refresh = run(["update"]);
   if ((refresh.status ?? 1) !== 0) {
     reporter.writeError("Specification index refresh failed.");
-    if (looksLikeAbiMismatch(refresh)) {
-      reporter.writeError(
-        `QMD native modules do not match the active Node ABI ${process.versions.modules}; run pnpm install --force under the active Node version.`,
-      );
-    }
-    reporter.writeError(fallback(query));
+    reportNativeOrFallback(reporter, refresh, query);
     return refresh.status ?? 1;
   }
   if (semantic) {
@@ -102,7 +144,7 @@ export async function searchCommand(
       reporter.writeError(
         "Specification embedding or model initialization failed; retry or omit --semantic.",
       );
-      reporter.writeError(fallback(query));
+      reportNativeOrFallback(reporter, embed, query);
       return embed.status ?? 1;
     }
   }
@@ -126,8 +168,8 @@ export async function searchCommand(
   ]);
   if ((search.status ?? 1) !== 0) {
     reporter.writeError("Specification search failed.");
-    reporter.writeError(fallback(query));
-  } else if (json && search.stdout) {
+    reportNativeOrFallback(reporter, search, query);
+  } else if (search.stdout) {
     reporter.writeLine(search.stdout.trimEnd());
   }
   return search.status ?? 1;
