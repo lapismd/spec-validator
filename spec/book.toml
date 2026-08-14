@@ -1,0 +1,13 @@
+[book]
+title = "Spec Validator Specification"
+authors = ["LapisMD contributors"]
+description = "Canonical requirements and verification evidence for @lapismd/spec-validator."
+language = "en"
+src = "src"
+
+[build]
+build-dir = "book"
+create-missing = false
+
+[output.html]
+git-repository-url = "https://github.com/lapismd/spec-validator"

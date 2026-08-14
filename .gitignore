@@ -1,0 +1,7 @@
+node_modules
+dist
+spec/book/
+.qmd/index.sqlite*
+.DS_Store
+*.log
+coverage

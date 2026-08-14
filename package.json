@@ -1,0 +1,83 @@
+{
+  "name": "@lapismd/spec-validator",
+  "version": "0.1.0",
+  "description": "Configurable specification, Storybook-catalog, QMD, and spec-first validation CLI for LapisMD repositories.",
+  "keywords": [
+    "specification",
+    "mdbook",
+    "validation",
+    "storybook",
+    "qmd",
+    "cli"
+  ],
+  "license": "MIT",
+  "author": "Steve Juma<help@lapis.md>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lapismd/spec-validator.git"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "type": "module",
+  "bin": {
+    "spec-validator": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist/**/*",
+    "skill/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "packageManager": "pnpm@10.32.1",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build:node": "tsc -p tsconfig.node-build.json && node ./scripts/prepare-cli-bin.mjs",
+    "prepare": "pnpm build:node",
+    "prepack": "pnpm build:node",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.node-build.json --noEmit",
+    "test": "tsx --test 'src/**/*.spec.ts'",
+    "spec:validate": "node ./dist/cli.js validate",
+    "spec:test": "pnpm test",
+    "spec:build": "node ./dist/cli.js build",
+    "spec:serve": "node ./dist/cli.js serve",
+    "spec:first": "node ./dist/cli.js first",
+    "spec:check": "node ./dist/cli.js check",
+    "spec:index": "node ./dist/cli.js index",
+    "spec:search": "node ./dist/cli.js search",
+    "spec:lint": "node ./dist/cli.js validate --only markdownlint",
+    "doctor": "node ./dist/cli.js doctor",
+    "fmt": "prettier . --write",
+    "fmt:check": "prettier . --check"
+  },
+  "peerDependencies": {
+    "@tobilu/qmd": "2.5.3"
+  },
+  "peerDependenciesMeta": {
+    "@tobilu/qmd": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "jiti": "^2.6.1",
+    "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@tobilu/qmd": "2.5.3",
+    "@types/node": "^22.15.0",
+    "markdownlint-cli2": "^0.22.1",
+    "prettier": "^3.6.2",
+    "tsx": "^4.20.5"
+  }
+}

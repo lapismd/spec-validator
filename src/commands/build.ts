@@ -1,0 +1,28 @@
+import { spawnSync } from "node:child_process";
+
+import type { Reporter } from "../reporter.js";
+
+export function buildCommand(
+  repoRoot: string,
+  _argv: string[],
+  reporter: Reporter,
+  mode: "build" | "serve" = "build",
+): number {
+  const args = mode === "serve" ? ["serve", "./spec", "--open"] : ["build", "./spec"];
+  const result = spawnSync("mdbook", args, {
+    cwd: repoRoot,
+    encoding: "utf8",
+    stdio: reporter.json ? ["ignore", "pipe", "pipe"] : "inherit",
+    shell: process.platform === "win32",
+  });
+  const status = result.status ?? 1;
+  if (reporter.json) {
+    reporter.writeReport({
+      version: 1,
+      ok: status === 0,
+      exitCode: status === 0 ? 0 : 1,
+      message: result.stdout || result.stderr || `${mode} exited ${status}`,
+    });
+  }
+  return status === 0 ? 0 : 1;
+}
