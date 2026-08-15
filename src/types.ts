@@ -182,6 +182,7 @@ export interface ValidatorOptions {
     | boolean
     | {
         requiredFiles?: string[];
+        forbiddenEntries?: string[];
         forbiddenPaths?: string[];
         allowedRootMarkdown?: string[];
       };
@@ -306,6 +307,7 @@ export interface ResolvedValidators {
     | false
     | {
         requiredFiles: string[];
+        forbiddenEntries: string[];
         forbiddenPaths: string[];
         allowedRootMarkdown: string[];
       };

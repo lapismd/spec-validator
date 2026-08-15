@@ -261,6 +261,7 @@ export function resolveConfig(user: UserConfig): ResolvedConfig {
     }),
     repositoryLayout: resolveValidator(input.repositoryLayout, {
       requiredFiles: [],
+      forbiddenEntries: [],
       forbiddenPaths: [],
       allowedRootMarkdown: [],
     }),

@@ -18,7 +18,7 @@ The package is a Node.js CLI with a loadable config, a validator registry, and a
 ### Acceptance details
 
 - The published bin MUST resolve to `dist/cli.js` and start with a Node shebang.
-- `defineConfig` MUST compose typed configuration fragments, and neutral profiles MUST provide reusable defaults without embedding repository policy.
+- `defineConfig` MUST compose typed configuration fragments, including exact repository-layout entries, and neutral profiles MUST provide reusable defaults without embedding repository policy.
 - Disabled validators MUST NOT run during `validate` or `check`.
 - The registry MUST accept extra plugin modules that export `name` and `validate`, and package builds MUST remove stale node output before compilation.
 

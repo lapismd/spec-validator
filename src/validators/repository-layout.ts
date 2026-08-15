@@ -22,6 +22,17 @@ export function validate(context: ValidationContext) {
       }),
     );
   }
+  for (const entry of options.forbiddenEntries) {
+    if (!existsSync(path.join(context.model.repoRoot, entry))) continue;
+    findings.push(
+      diagnostic({
+        code: "SPEC-LAYOUT-FORBIDDEN",
+        rule,
+        file: entry,
+        message: "filesystem entry is forbidden by repository layout policy",
+      }),
+    );
+  }
   for (const pattern of options.forbiddenPaths) {
     const matcher = new RegExp(pattern);
     for (const tracked of context.trackedFiles.filter((file) =>

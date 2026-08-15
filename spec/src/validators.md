@@ -19,7 +19,7 @@ Built-in validators are named modules. Each can be enabled, configured, or repla
 - `summary` MUST check `SUMMARY.md` coverage and local Markdown links.
 - `governance` MUST check requirement structure, uniqueness, and unknown references.
 - `verification` MUST check one row per ID, allowed statuses, and evidence.
-- `book` MUST check `spec/book.toml` and untracked `spec/book/` output, while `repositoryLayout` and `packageDocs` MUST express reusable layout and package coverage without repository names.
+- `book` MUST check `spec/book.toml` and untracked `spec/book/` output, while `repositoryLayout` MUST reject configured tracked patterns and exact filesystem entries and `packageDocs` MUST express reusable package coverage without repository names.
 
 ## SV-VAL-002 — Extension contract
 
