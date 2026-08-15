@@ -31,6 +31,7 @@ export interface AcceptanceSection {
   file: string;
   line: number;
   present: boolean;
+  introduction: boolean;
   nonBullet: string[];
   bullets: Array<{
     statement: string;
@@ -147,6 +148,10 @@ export interface ValidatorOptions {
         normative?: boolean;
         proseLimits?: boolean;
         acceptance?: boolean;
+        acceptanceScope?: "all" | "declared";
+        acceptanceIntroduction?: "forbid" | "require" | "allow";
+        acceptanceAtomic?: boolean;
+        acceptanceColocation?: boolean;
         references?: boolean;
         changeMap?: boolean;
       };
@@ -223,11 +228,12 @@ export interface UserConfig {
   idPattern?: string | RegExp;
   specDir?: string;
   requirementStyle?: RequirementStyle;
+  tableSection?: string;
   headingTemplate?: string;
   maxWords?: number;
   maxSentences?: number;
   minAcceptance?: number;
-  maxAcceptance?: number;
+  maxAcceptance?: number | null;
   ruleIds?: Partial<RuleIds>;
   diagnostics?: DiagnosticRuleMap;
   validators?: ValidatorOptions;
@@ -245,11 +251,12 @@ export interface ResolvedConfig {
   referencePattern: RegExp;
   specDir: string;
   requirementStyle: RequirementStyle;
+  tableSection: string | null;
   headingTemplate: string;
   maxWords: number;
   maxSentences: number;
   minAcceptance: number;
-  maxAcceptance: number;
+  maxAcceptance: number | null;
   ruleIds: RuleIds;
   diagnostics: DiagnosticRuleMap;
   validators: ResolvedValidators;
@@ -270,6 +277,10 @@ export interface ResolvedValidators {
         normative: boolean;
         proseLimits: boolean;
         acceptance: boolean;
+        acceptanceScope: "all" | "declared";
+        acceptanceIntroduction: "forbid" | "require" | "allow";
+        acceptanceAtomic: boolean;
+        acceptanceColocation: boolean;
         references: boolean;
         changeMap: boolean;
       };

@@ -199,6 +199,9 @@ function parseHeadingRequirements(
       );
       const acceptanceBody =
         acceptanceHeading < 0 ? [] : body.slice(acceptanceHeading + 1);
+      const firstBullet = acceptanceBody.findIndex((line) =>
+        /^-\s+/.test(line),
+      );
       const nonBullet = acceptanceBody.filter(
         (line) => line.trim() && !/^-\s+/.test(line),
       );
@@ -230,6 +233,9 @@ function parseHeadingRequirements(
         file: file.relativePath,
         line: acceptanceHeading < 0 ? index + 1 : index + acceptanceHeading + 2,
         present: acceptanceHeading >= 0,
+        introduction: acceptanceBody
+          .slice(0, firstBullet < 0 ? acceptanceBody.length : firstBullet)
+          .some((line) => line.trim().length > 0),
         nonBullet,
         bullets,
       });
@@ -263,29 +269,48 @@ function parseTableRequirements(
   const definitions: RequirementDefinition[] = [];
   const malformed: Array<{ line: number; reason: string }> = [];
   const acceptanceSections: AcceptanceSection[] = [];
-  let inRequirements = false;
+  let inRequirements = config.tableSection === null;
+  let requirementSectionLevel = 0;
 
   for (let index = 0; index < lines.length; index += 1) {
-    if (/^##\s+/.test(lines[index]!) && /requirement/i.test(lines[index]!)) {
+    const heading = /^(#{1,6})\s+(.+?)\s*$/.exec(lines[index]!);
+    if (config.tableSection && heading?.[2] === config.tableSection) {
       inRequirements = true;
+      requirementSectionLevel = heading[1]!.length;
       continue;
     }
-    if (inRequirements && /^##\s+/.test(lines[index]!)) inRequirements = false;
-    if (!inRequirements && !/^\s*\|/.test(lines[index]!)) continue;
+    if (
+      config.tableSection &&
+      inRequirements &&
+      heading &&
+      heading[1]!.length <= requirementSectionLevel
+    ) {
+      inRequirements = false;
+    }
+    if (!inRequirements) continue;
     if (!/^\s*\|/.test(lines[index]!)) continue;
     const cells = splitMarkdownTableRow(lines[index]!);
-    if (!cells || cells.length < 2) continue;
+    if (!cells || cells.length !== 2) {
+      if (config.tableSection) {
+        malformed.push({
+          line: index + 1,
+          reason: "expected exactly two table cells",
+        });
+      }
+      continue;
+    }
     const id = cells[0]!;
     const statement = cells[1]!;
     if (id === "ID" || /^:?-+:?$/.test(id.replaceAll(" ", ""))) continue;
-    if (!config.idPattern.test(id)) continue;
+    const validId = config.idPattern.test(id);
+    if (!config.tableSection && !validId) continue;
     definitions.push({
       id,
       statement,
       file: file.relativePath,
       chapterPath: file.chapterPath,
       line: index + 1,
-      validId: true,
+      validId,
       ...proseMetrics(statement),
     });
   }
@@ -298,6 +323,7 @@ function parseTableRequirements(
     if (!match) continue;
     const end = nextHeading(lines, index, /^#{1,3}\s+/);
     const body = lines.slice(index + 1, end);
+    const firstBullet = body.findIndex((line) => /^-\s+/.test(line));
     const bullets = body
       .map((line, bodyIndex) => ({ line, lineNumber: index + bodyIndex + 2 }))
       .filter((entry) => /^-\s+/.test(entry.line))
@@ -314,6 +340,9 @@ function parseTableRequirements(
       file: file.relativePath,
       line: index + 1,
       present: true,
+      introduction: body
+        .slice(0, firstBullet < 0 ? body.length : firstBullet)
+        .some((line) => line.trim().length > 0),
       nonBullet: body.filter((line) => line.trim() && !/^-\s+/.test(line)),
       bullets,
     });

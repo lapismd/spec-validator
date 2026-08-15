@@ -2,6 +2,7 @@ import path from "node:path";
 
 import { diagnostic } from "../diagnostics.js";
 import {
+  groupBy,
   NORMATIVE_PATTERN,
   splitMarkdownTableRow,
   withoutFencedCode,
@@ -27,7 +28,10 @@ export function validate(context: ValidationContext) {
     for (const row of parsed.malformed) {
       findings.push(
         diagnostic({
-          code: "SPEC-REQ-HEADING",
+          code:
+            context.config.requirementStyle === "table"
+              ? "SPEC-REQ-TABLE"
+              : "SPEC-REQ-HEADING",
           rule,
           file: parsed.file.relativePath,
           line: row.line,
@@ -38,6 +42,18 @@ export function validate(context: ValidationContext) {
   }
 
   for (const definition of context.model.definitions) {
+    if (definition.validId === false) {
+      findings.push(
+        diagnostic({
+          code: "SPEC-REQ-ID",
+          rule,
+          file: definition.file,
+          line: definition.line,
+          subject: definition.id,
+          message: `requirement ID must match ${context.config.idPattern}`,
+        }),
+      );
+    }
     if (!definition.statement) {
       findings.push(
         diagnostic({
@@ -107,8 +123,32 @@ export function validate(context: ValidationContext) {
     }
   }
 
-  if (options.acceptance && context.config.requirementStyle === "heading") {
-    for (const section of context.model.acceptanceSections) {
+  if (options.acceptance) {
+    const sections =
+      options.acceptanceScope === "declared"
+        ? context.model.acceptanceSections.filter((section) => section.present)
+        : context.model.acceptanceSections;
+    const sectionsById = groupBy(sections, (section) => section.id);
+    for (const section of sections) {
+      const definition = context.model.definitionsById.get(section.id) ?? [];
+      if (
+        options.acceptanceColocation &&
+        (definition.length !== 1 ||
+          definition[0]?.file !== section.file ||
+          sectionsById.get(section.id)?.length !== 1)
+      ) {
+        findings.push(
+          diagnostic({
+            code: "SPEC-REQ-DETAILS-ID",
+            rule,
+            file: section.file,
+            line: section.line,
+            subject: section.id,
+            message:
+              "acceptance details must appear once in the chapter that defines the requirement",
+          }),
+        );
+      }
       if (!section.present) {
         findings.push(
           diagnostic({
@@ -117,11 +157,14 @@ export function validate(context: ValidationContext) {
             file: section.file,
             line: section.line,
             subject: section.id,
-            message: `add an “Acceptance details” subsection with ${minAcceptance} to ${maxAcceptance} atomic bullets`,
+            message: `add an “Acceptance details” subsection with at least ${minAcceptance} bullet${minAcceptance === 1 ? "" : "s"}`,
           }),
         );
       }
-      if (section.nonBullet.length) {
+      if (
+        options.acceptanceIntroduction === "forbid" &&
+        section.nonBullet.length
+      ) {
         findings.push(
           diagnostic({
             code: "SPEC-DETAILS-FORM",
@@ -135,39 +178,63 @@ export function validate(context: ValidationContext) {
         );
       }
       if (
-        section.present &&
-        (section.bullets.length < minAcceptance ||
-          section.bullets.length > maxAcceptance)
+        options.acceptanceIntroduction === "require" &&
+        !section.introduction
       ) {
         findings.push(
           diagnostic({
-            code: "SPEC-DETAILS-COUNT",
+            code: "SPEC-REQ-DETAILS-LIST",
             rule,
             file: section.file,
             line: section.line,
             subject: section.id,
-            message: `expected ${minAcceptance} to ${maxAcceptance} acceptance bullets, found ${section.bullets.length}`,
+            message:
+              "acceptance details need an introduction before the bullets",
+          }),
+        );
+      }
+      if (
+        section.present &&
+        (section.bullets.length < minAcceptance ||
+          (maxAcceptance !== null && section.bullets.length > maxAcceptance))
+      ) {
+        findings.push(
+          diagnostic({
+            code:
+              options.acceptanceIntroduction === "require"
+                ? "SPEC-REQ-DETAILS-LIST"
+                : "SPEC-DETAILS-COUNT",
+            rule,
+            file: section.file,
+            line: section.line,
+            subject: section.id,
+            message: `expected ${minAcceptance}${maxAcceptance === null ? " or more" : ` to ${maxAcceptance}`} acceptance bullets, found ${section.bullets.length}`,
           }),
         );
       }
       for (const bullet of section.bullets) {
-        if (bullet.sentences > 1) {
+        if (bullet.sentences > (options.acceptanceAtomic ? 1 : maxSentences)) {
           findings.push(
             diagnostic({
-              code: "SPEC-DETAILS-ATOMIC",
+              code: options.acceptanceAtomic
+                ? "SPEC-DETAILS-ATOMIC"
+                : "SPEC-REQ-SENTENCES",
               rule,
               file: section.file,
               line: bullet.line,
               subject: section.id,
-              message:
-                "acceptance bullet contains more than one sentence; split it",
+              message: options.acceptanceAtomic
+                ? "acceptance bullet contains more than one sentence; split it"
+                : `${bullet.sentences} sentences exceed the maximum of ${maxSentences}`,
             }),
           );
         }
         if (bullet.words > maxWords) {
           findings.push(
             diagnostic({
-              code: "SPEC-DETAILS-WORDS",
+              code: options.acceptanceAtomic
+                ? "SPEC-DETAILS-WORDS"
+                : "SPEC-REQ-WORDS",
               rule,
               file: section.file,
               line: bullet.line,

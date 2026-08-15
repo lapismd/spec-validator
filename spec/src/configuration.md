@@ -51,6 +51,6 @@ Consumers configure the CLI with `spec-validator.config.ts`, `.mjs`, or `.json` 
 ### Acceptance details
 
 - The package MUST NOT contain repository-named presets or foreign path maps.
-- Consumer configuration MUST be able to express mapped or any-chapter spec-first policy, grouped verification rows, repository-specific Storybook roots, and exact forbidden filesystem entries.
+- Consumer configuration MUST be able to express mapped or any-chapter spec-first policy, grouped verification rows, repository-specific Storybook roots, exact forbidden filesystem entries, and repository-owned table and acceptance-detail dialects.
 - Structured additional lanes MUST use separate `name`, `command`, and `args` fields without shell-word splitting.
 - A repository-specific check MAY remain a named lane until a reusable validator exists.

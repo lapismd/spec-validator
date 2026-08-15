@@ -19,7 +19,7 @@ export function tableRequirements(
   return {
     requirementStyle: "table",
     minAcceptance: 0,
-    maxAcceptance: 20,
+    maxAcceptance: null,
     ...overrides,
     validators: {
       governance: {

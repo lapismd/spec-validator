@@ -17,7 +17,7 @@ Built-in validators are named modules. Each can be enabled, configured, or repla
 ### Acceptance details
 
 - `summary` MUST check `SUMMARY.md` coverage and local Markdown links.
-- `governance` MUST check requirement structure, uniqueness, and unknown references.
+- `governance` MUST check requirement structure, uniqueness, unknown references, strict configured table sections, and optional declared acceptance details.
 - `verification` MUST check one row per ID, allowed statuses, and evidence.
 - `book` MUST check `spec/book.toml` and untracked `spec/book/` output, while `repositoryLayout` MUST reject configured tracked patterns and exact filesystem entries and `packageDocs` MUST express reusable package coverage without repository names.
 
@@ -38,7 +38,7 @@ Built-in validators are named modules. Each can be enabled, configured, or repla
 
 ### Acceptance details
 
-- Verification MUST support configured sections and headers, single or grouped IDs, reference-only traceability, and exact or prefix statuses.
+- Verification MUST support configured sections and headers, single or grouped IDs, reference-only traceability, and exact or prefix statuses; table governance MUST support strict configured sections and configurable declared acceptance details.
 - Storybook catalog validation MUST support local helpers, raw examples, Svelte module scripts, package story discovery, and configurable boundary and language rules.
 - Storybook mirrors MUST support target, title, metadata-only content, order, and registry coverage checks when enabled.
 - Spec-first MUST support ordered path mappings, capture maps, ignored paths, conditional changed-line protection, and mapped-chapter or any-canonical modes.
