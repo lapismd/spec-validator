@@ -40,7 +40,7 @@ Consumers configure the CLI with `spec-validator.config.ts`, `.mjs`, or `.json` 
 ### Acceptance details
 
 - Every enabled built-in MUST have a validator default or mappings for all emitted diagnostic codes.
-- Exact diagnostic mappings MUST override validator defaults so one validator may report findings governed by different requirements.
+- Exact diagnostic mappings MUST override validator defaults so one validator may report findings governed by different requirements, and a custom reference matcher MAY exclude auxiliary identifier namespaces.
 - A missing rule mapping MUST fail configuration loading rather than inherit an `SV-*` ID.
 - Internal failures after configuration loads MUST use the configured internal rule.
 

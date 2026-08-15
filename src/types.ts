@@ -227,6 +227,7 @@ export interface ValidatorOptions {
 export interface UserConfig {
   name?: string;
   idPattern?: string | RegExp;
+  referencePattern?: string | RegExp;
   specDir?: string;
   requirementStyle?: RequirementStyle;
   tableSection?: string;

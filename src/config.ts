@@ -206,6 +206,10 @@ export function resolveConfig(user: UserConfig): ResolvedConfig {
     source.startsWith("^") && source.endsWith("$")
       ? source.slice(1, -1)
       : source;
+  const referencePattern = asRegExp(
+    user.referencePattern,
+    new RegExp(`\\b(?:${inner})\\b`, "g"),
+  );
   const input = user.validators ?? ({} as ValidatorOptions);
 
   const validators: ResolvedValidators = {
@@ -301,7 +305,7 @@ export function resolveConfig(user: UserConfig): ResolvedConfig {
   const config: ResolvedConfig = {
     name: user.name ?? "custom",
     idPattern,
-    referencePattern: new RegExp(`\\b(?:${inner})\\b`, "g"),
+    referencePattern,
     specDir: user.specDir ?? "spec/src",
     requirementStyle: user.requirementStyle ?? "heading",
     tableSection: user.tableSection ?? null,

@@ -66,3 +66,17 @@ test("exact diagnostic mappings override validator defaults", () => {
     "FIX-GOV-001",
   );
 });
+
+test("consumers can exclude auxiliary namespaces from requirement references", () => {
+  const config = resolveConfig({
+    idPattern: /^FIX-[A-Z]+-\d{3}$/,
+    referencePattern: /\bFIX-(?!GAP-)[A-Z]+-\d{3}\b/g,
+    ruleIds: { internal: "FIX-GOV-001" },
+  });
+  assert.deepEqual(
+    [..."FIX-GAP-001 FIX-GOV-001".matchAll(config.referencePattern)].map(
+      (match) => match[0],
+    ),
+    ["FIX-GOV-001"],
+  );
+});
