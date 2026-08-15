@@ -11,6 +11,7 @@ Specification changes precede or accompany protected implementation. Updating an
 | Spec-first gate     | Governance      | SV-GOV-004  |
 | Generated artifacts | Governance      | SV-GOV-005  |
 | Agent authority     | Governance      | SV-GOV-006  |
+| Sibling resolution  | Governance      | SV-GOV-007  |
 
 ## Change map
 
@@ -80,3 +81,13 @@ Specification changes precede or accompany protected implementation. Updating an
 - The guide MUST treat QMD hits as a cache and require opening the returned `spec/src` file.
 - The guide MUST require `pnpm spec:check` and `pnpm build:node` before a verified commit.
 - README and skill text MUST NOT replace this guide as the implementation contract.
+
+## SV-GOV-007 — Sibling resolution
+
+**Requirement.** Tracked `AGENTS.md` MUST require colocated LapisMD siblings to resolve through explicit `link:` dependencies or `link:`-valued root overrides without becoming workspace members.
+
+### Acceptance details
+
+- Publishable manifests MUST retain portable ranges without machine-specific sibling paths.
+- Agents MUST NOT vendor sibling source, mutate sibling `node_modules`, or replace a local checkout with a registry copy.
+- A sibling that exports built output MUST be rebuilt before consumer validation.
