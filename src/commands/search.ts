@@ -2,13 +2,16 @@ import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import path from "node:path";
 
-import { UsageError } from "../argv.js";
+import { assertCommandArgs, UsageError } from "../argv.js";
 import { loadResolvedConfig } from "../config.js";
 import type { Reporter } from "../reporter.js";
 
 const DEFAULT_LIMIT = 10;
 
-export function resolveQmdBinary(repoRoot: string, platform = process.platform): string {
+export function resolveQmdBinary(
+  repoRoot: string,
+  platform = process.platform,
+): string {
   return path.join(
     repoRoot,
     "node_modules",
@@ -27,7 +30,9 @@ function outputOf(result: {
   stderr?: string | null;
   error?: Error;
 }): string {
-  return [result.stdout, result.stderr, result.error?.message].filter(Boolean).join("\n");
+  return [result.stdout, result.stderr, result.error?.message]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export function looksLikeAbiMismatch(result: {
@@ -59,28 +64,31 @@ export function nativeModuleAdvice(result: {
     return `QMD native modules do not match the active Node ABI ${process.versions.modules}; run pnpm install --force under the active Node version.`;
   }
   if (looksLikeMissingNativeBinding(result)) {
-    return "QMD native modules are not built; approve better-sqlite3 and node-llama-cpp in pnpm.onlyBuiltDependencies, then run pnpm install.";
+    return "QMD native modules are not built; allow better-sqlite3 and node-llama-cpp builds in pnpm-workspace.yaml, then run pnpm install.";
   }
   return undefined;
 }
 
-function reportNativeOrFallback(
-  reporter: Reporter,
+function nativeOrFallbackMessage(
   result: {
     stdout?: string | null;
     stderr?: string | null;
     error?: Error;
   },
   query?: string,
-): void {
+): string {
   const advice = nativeModuleAdvice(result);
-  if (advice) {
-    reporter.writeError(advice);
+  const details = advice ?? outputOf(result).trim();
+  return [details, fallback(query)].filter(Boolean).join("\n");
+}
+
+function fail(reporter: Reporter, message: string, exitCode = 2): number {
+  if (reporter.json) {
+    reporter.writeReport({ version: 1, ok: false, exitCode, message });
   } else {
-    const output = outputOf(result).trim();
-    if (output) reporter.writeError(output);
+    reporter.writeError(message);
   }
-  reporter.writeError(fallback(query));
+  return exitCode;
 }
 
 export async function searchCommand(
@@ -89,17 +97,25 @@ export async function searchCommand(
   reporter: Reporter,
   command: "search" | "index",
 ): Promise<number> {
+  assertCommandArgs(argv, {
+    boolean: ["--semantic"],
+    value: ["--limit", "-n"],
+    positionals: command === "search",
+  });
   const config = await loadResolvedConfig(repoRoot);
   const options = config.validators.qmd;
   if (options === false) {
-    reporter.writeError("QMD is disabled in spec-validator config.");
-    return 2;
+    return fail(reporter, "QMD is disabled in spec-validator config.");
   }
   const semantic = argv.includes("--semantic");
-  const json = reporter.json || argv.includes("--json");
-  const limitIndex = argv.findIndex((item) => item === "--limit" || item === "-n");
-  const limit =
-    limitIndex >= 0 ? Number(argv[limitIndex + 1]) : DEFAULT_LIMIT;
+  const json = reporter.json;
+  const limitIndex = argv.findIndex(
+    (item) => item === "--limit" || item === "-n",
+  );
+  const limit = limitIndex >= 0 ? Number(argv[limitIndex + 1]) : DEFAULT_LIMIT;
+  if (!Number.isFinite(limit) || limit <= 0) {
+    throw new UsageError("--limit must be a positive number");
+  }
   const query = argv
     .filter((item, index) => {
       if (item.startsWith("-")) return false;
@@ -108,19 +124,22 @@ export async function searchCommand(
     })
     .join(" ")
     .trim();
-  if (command === "search" && !query) throw new UsageError("search requires a query");
+  if (command === "search" && !query)
+    throw new UsageError("search requires a query");
 
   const configPath = path.join(repoRoot, options.configPath);
   if (!existsSync(configPath)) {
-    reporter.writeError(`Missing ${options.configPath}; restore the tracked QMD configuration.`);
-    reporter.writeError(fallback(query));
-    return 2;
+    return fail(
+      reporter,
+      `Missing ${options.configPath}; restore the tracked QMD configuration.\n${fallback(query)}`,
+    );
   }
   const binary = resolveQmdBinary(repoRoot);
   if (!existsSync(binary)) {
-    reporter.writeError("Missing the repository-local QMD binary; run pnpm install.");
-    reporter.writeError(fallback(query));
-    return 2;
+    return fail(
+      reporter,
+      `Missing the repository-local QMD binary; run pnpm install.\n${fallback(query)}`,
+    );
   }
 
   const run = (args: string[]) =>
@@ -134,23 +153,30 @@ export async function searchCommand(
 
   const refresh = run(["update"]);
   if ((refresh.status ?? 1) !== 0) {
-    reporter.writeError("Specification index refresh failed.");
-    reportNativeOrFallback(reporter, refresh, query);
-    return refresh.status ?? 1;
+    return fail(
+      reporter,
+      `Specification index refresh failed.\n${nativeOrFallbackMessage(refresh, query)}`,
+      refresh.status ?? 1,
+    );
   }
   if (semantic) {
     const embed = run(["embed", "-c", options.collection]);
     if ((embed.status ?? 1) !== 0) {
-      reporter.writeError(
-        "Specification embedding or model initialization failed; retry or omit --semantic.",
+      return fail(
+        reporter,
+        `Specification embedding or model initialization failed; retry or omit --semantic.\n${nativeOrFallbackMessage(embed, query)}`,
+        embed.status ?? 1,
       );
-      reportNativeOrFallback(reporter, embed, query);
-      return embed.status ?? 1;
     }
   }
   if (command === "index") {
     if (reporter.json) {
-      reporter.writeReport({ version: 1, ok: true, exitCode: 0, message: "Index refreshed." });
+      reporter.writeReport({
+        version: 1,
+        ok: true,
+        exitCode: 0,
+        message: "Index refreshed.",
+      });
     }
     return 0;
   }
@@ -167,10 +193,25 @@ export async function searchCommand(
     "--line-numbers",
   ]);
   if ((search.status ?? 1) !== 0) {
-    reporter.writeError("Specification search failed.");
-    reportNativeOrFallback(reporter, search, query);
+    return fail(
+      reporter,
+      `Specification search failed.\n${nativeOrFallbackMessage(search, query)}`,
+      search.status ?? 1,
+    );
   } else if (search.stdout) {
-    reporter.writeLine(search.stdout.trimEnd());
+    if (reporter.json) {
+      let results: unknown = search.stdout.trim();
+      try {
+        results = JSON.parse(search.stdout);
+      } catch {
+        // Preserve unexpected QMD output inside the versioned envelope.
+      }
+      reporter.writeReport({ version: 1, ok: true, exitCode: 0, results });
+    } else {
+      reporter.writeLine(search.stdout.trimEnd());
+    }
+  } else if (reporter.json) {
+    reporter.writeReport({ version: 1, ok: true, exitCode: 0, results: [] });
   }
-  return search.status ?? 1;
+  return 0;
 }

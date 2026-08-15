@@ -8,12 +8,17 @@ checks, and optional QMD discovery.
 
 ```bash
 pnpm add -D @lapismd/spec-validator
-pnpm exec spec-validator init --preset design-core
+pnpm exec spec-validator init --profile heading
 ```
 
 `@tobilu/qmd` is an optional peer for `search` and `index`. Keep it as a root
-development dependency when you enable QMD, and approve `better-sqlite3` and
-`node-llama-cpp` in `pnpm.onlyBuiltDependencies` so the local index can open.
+development dependency when you enable QMD, and allow `better-sqlite3` and
+`node-llama-cpp` builds in `pnpm-workspace.yaml` so the local index can open.
+
+The package owns reusable Markdown, verification, Storybook, package, layout,
+and spec-first validators. Each repository owns its paths, requirement IDs,
+statuses, enabled validators, diagnostic mappings, and additional check lanes
+in `spec-validator.config.ts`.
 
 ## Commands
 
@@ -22,6 +27,7 @@ spec-validator validate
 spec-validator check
 spec-validator first
 spec-validator doctor --fix
+spec-validator doctor --fix --skill
 spec-validator search -- "SV-GOV-001"
 spec-validator skill install
 ```

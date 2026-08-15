@@ -1,14 +1,17 @@
 import { spawnSync } from "node:child_process";
 
+import { assertCommandArgs } from "../argv.js";
 import type { Reporter } from "../reporter.js";
 
 export function buildCommand(
   repoRoot: string,
-  _argv: string[],
+  argv: string[],
   reporter: Reporter,
   mode: "build" | "serve" = "build",
 ): number {
-  const args = mode === "serve" ? ["serve", "./spec", "--open"] : ["build", "./spec"];
+  assertCommandArgs(argv);
+  const args =
+    mode === "serve" ? ["serve", "./spec", "--open"] : ["build", "./spec"];
   const result = spawnSync("mdbook", args, {
     cwd: repoRoot,
     encoding: "utf8",

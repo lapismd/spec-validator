@@ -4,11 +4,11 @@ The `spec-validator` binary is the supported entry point. Global output flags ap
 
 ## Public surface coverage
 
-| Surface | Public boundary | Requirement |
-| --- | --- | --- |
-| Command surface | CLI | SV-CLI-001 |
-| Human and agent output | CLI | SV-CLI-002 |
-| Check composition | CLI | SV-CLI-003 |
+| Surface                | Public boundary | Requirement |
+| ---------------------- | --------------- | ----------- |
+| Command surface        | CLI             | SV-CLI-001  |
+| Human and agent output | CLI             | SV-CLI-002  |
+| Check composition      | CLI             | SV-CLI-003  |
 
 ## SV-CLI-001 — Command surface
 
@@ -29,7 +29,7 @@ The `spec-validator` binary is the supported entry point. Global output flags ap
 
 - Default color mode MUST be `auto` and MUST honor `NO_COLOR` and `FORCE_COLOR`.
 - `--no-color` and `--color=never` MUST disable ANSI.
-- `--json` MUST write a versioned object with `ok`, `exitCode`, and either `findings` or `checks`, and MUST NOT emit ANSI.
+- `--json` MUST write at most one versioned object with `ok`, `exitCode`, and command results, including for aggregate checks and usage failures, and MUST NOT emit ANSI.
 - Diagnostics MUST keep the `CODE RULE file:line [subject] — message` shape in pretty mode.
 
 ## SV-CLI-003 — Check composition
@@ -41,4 +41,4 @@ The `spec-validator` binary is the supported entry point. Global output flags ap
 - A failed earlier lane MUST stop the remaining lanes.
 - The overall exit code MUST be the first non-zero lane status.
 - `search` and `index` MUST remain available as separate commands.
-- Pretty check output MUST name each lane and its result.
+- Pretty output MUST name each lane and result, while JSON output MUST contain ordered structured lane results with captured output.

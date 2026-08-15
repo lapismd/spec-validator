@@ -1,30 +1,27 @@
 import { spawnSync } from "node:child_process";
 
+import { assertCommandArgs } from "../argv.js";
 import { loadResolvedConfig } from "../config.js";
 import type { Reporter } from "../reporter.js";
-import { firstCommand } from "./first.js";
-import { validateCommand } from "./validate.js";
+import type { CheckLaneConfig, CheckLaneResult } from "../types.js";
+import { runFirst } from "./first.js";
+import { runValidation } from "./validate.js";
 
-function runLane(
-  label: string,
-  command: string,
-  args: string[],
-  repoRoot: string,
-  reporter: Reporter,
-  useShell = process.platform === "win32",
-): number {
-  if (!reporter.json) reporter.writeLine(`${label}...`);
-  const result = spawnSync(command, args, {
+function runLane(config: CheckLaneConfig, repoRoot: string): CheckLaneResult {
+  const result = spawnSync(config.command, config.args ?? [], {
     cwd: repoRoot,
     encoding: "utf8",
-    stdio: reporter.json ? ["ignore", "pipe", "pipe"] : "inherit",
-    shell: useShell,
+    stdio: ["ignore", "pipe", "pipe"],
+    shell: process.platform === "win32",
   });
-  const status = result.status ?? 1;
-  if (!reporter.json) {
-    reporter.writeLine(status === 0 ? `${label} passed.` : `${label} failed.`);
-  }
-  return status;
+  const exitCode = result.status ?? 1;
+  return {
+    name: config.name,
+    ok: exitCode === 0,
+    exitCode,
+    stdout: result.stdout?.trimEnd() || undefined,
+    stderr: (result.stderr || result.error?.message)?.trimEnd() || undefined,
+  };
 }
 
 export async function checkCommand(
@@ -32,23 +29,54 @@ export async function checkCommand(
   argv: string[],
   reporter: Reporter,
 ): Promise<number> {
-  if (!reporter.json) reporter.writeLine("validate...");
-  const validateStatus = await validateCommand(repoRoot, argv, reporter);
-  if (validateStatus !== 0) return validateStatus;
-  if (!reporter.json) reporter.writeLine("validate passed.");
-
+  assertCommandArgs(argv, { value: ["--base", "--head", "--file"] });
   const config = await loadResolvedConfig(repoRoot);
-  if (config.check.tests) {
-    const command = config.check.tests === true ? "pnpm test" : config.check.tests;
-    const [bin, ...args] = command.split(/\s+/);
-    const testStatus = runLane("tests", bin!, args, repoRoot, reporter);
-    if (testStatus !== 0) return testStatus;
+  const lanes: CheckLaneResult[] = [];
+  const validation = await runValidation(repoRoot);
+  lanes.push({
+    name: "validate",
+    ok: validation.ok,
+    exitCode: validation.ok ? 0 : 1,
+    findings: validation.findings,
+    stats: validation.stats,
+  });
+
+  if (validation.ok) {
+    for (const lane of config.check.lanes) {
+      const result = runLane(lane, repoRoot);
+      lanes.push(result);
+      if (!result.ok) break;
+    }
+  }
+  if (lanes.every((lane) => lane.ok) && config.check.build) {
+    lanes.push(
+      runLane(
+        { name: "mdbook", command: "mdbook", args: ["build", "./spec"] },
+        repoRoot,
+      ),
+    );
+  }
+  if (lanes.every((lane) => lane.ok) && config.check.first) {
+    const first = await runFirst(repoRoot, argv);
+    lanes.push({
+      name: "spec-first",
+      ok: first.ok,
+      exitCode: first.exitCode,
+      findings: first.findings,
+      stats: first.stats,
+    });
   }
 
-  const buildStatus = runLane("mdbook", "mdbook", ["build", "./spec"], repoRoot, reporter);
-  if (buildStatus !== 0) return buildStatus;
-
-  if (!reporter.json) reporter.writeLine("spec-first...");
-  const firstStatus = await firstCommand(repoRoot, argv, reporter);
-  return firstStatus;
+  const firstFailure = lanes.find((lane) => !lane.ok);
+  const exitCode = firstFailure?.exitCode ?? 0;
+  reporter.writeReport({
+    version: 1,
+    ok: !firstFailure,
+    exitCode,
+    lanes,
+    message: firstFailure
+      ? `Check stopped after ${firstFailure.name}.`
+      : `Check passed: ${lanes.length} lane(s).`,
+  });
+  return exitCode;
 }

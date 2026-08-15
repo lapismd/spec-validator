@@ -1,8 +1,7 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { createJiti } from "jiti";
 
-import { getPreset } from "./presets.js";
 import type {
   ResolvedConfig,
   ResolvedValidators,
@@ -14,28 +13,70 @@ import type {
 export const CONFIG_FILES = [
   "spec-validator.config.ts",
   "spec-validator.config.mjs",
-  "spec-validator.config.js",
   "spec-validator.config.json",
 ] as const;
 
-const DEFAULT_RULE_IDS: RuleIds = {
-  summary: "SV-GOV-003",
-  governance: "SV-GOV-001",
-  verification: "SV-GOV-002",
-  book: "SV-GOV-003",
-  bookIgnore: "SV-GOV-005",
-  publicSurfaces: "SV-GOV-003",
-  storybookCatalog: "SV-VAL-001",
-  storybookMirrors: "SV-VAL-001",
-  qmd: "SV-QMD-001",
-  markdownlint: "SV-CLI-003",
-  packageManifest: "SV-ARCH-001",
-  specFirst: "SV-GOV-004",
-  internal: "SV-GOV-003",
+const VALIDATOR_NAMES = [
+  "summary",
+  "governance",
+  "verification",
+  "book",
+  "publicSurfaces",
+  "storybookCatalog",
+  "storybookMirrors",
+  "repositoryLayout",
+  "packageDocs",
+  "qmd",
+  "markdownlint",
+  "packageManifest",
+  "specFirst",
+] as const satisfies ReadonlyArray<keyof ResolvedValidators>;
+
+const EMPTY_RULE_IDS: RuleIds = {
+  summary: "",
+  governance: "",
+  verification: "",
+  book: "",
+  bookIgnore: "",
+  publicSurfaces: "",
+  storybookCatalog: "",
+  storybookMirrors: "",
+  repositoryLayout: "",
+  packageDocs: "",
+  qmd: "",
+  markdownlint: "",
+  packageManifest: "",
+  specFirst: "",
+  internal: "",
 };
 
-export function defineConfig(config: UserConfig): UserConfig {
-  return config;
+function mergeFragments(fragments: UserConfig[]): UserConfig {
+  return fragments.reduce<UserConfig>(
+    (result, fragment) => ({
+      ...result,
+      ...fragment,
+      ruleIds: { ...result.ruleIds, ...fragment.ruleIds },
+      diagnostics: { ...result.diagnostics, ...fragment.diagnostics },
+      validators: { ...result.validators, ...fragment.validators },
+      check:
+        fragment.check === undefined ? result.check : { ...fragment.check },
+    }),
+    {},
+  );
+}
+
+export function defineConfig(
+  first: UserConfig,
+  ...fragments: UserConfig[]
+): UserConfig {
+  return mergeFragments([first, ...fragments]);
+}
+
+export function mergeValidatorOptions<T extends object>(
+  base: T,
+  override: Partial<T>,
+): T {
+  return { ...base, ...override };
 }
 
 export function findConfigPath(repoRoot: string): string | null {
@@ -54,7 +95,6 @@ export async function loadUserConfig(repoRoot: string): Promise<UserConfig> {
     );
   }
   if (configPath.endsWith(".json")) {
-    const { readFileSync } = await import("node:fs");
     return JSON.parse(readFileSync(configPath, "utf8")) as UserConfig;
   }
   const jiti = createJiti(import.meta.url, { interopDefault: true });
@@ -64,136 +104,221 @@ export async function loadUserConfig(repoRoot: string): Promise<UserConfig> {
       ? (loaded as { default: UserConfig }).default
       : (loaded as UserConfig);
   if (!config || typeof config !== "object") {
-    throw new Error(`${path.basename(configPath)} did not export a config object`);
+    throw new Error(
+      `${path.basename(configPath)} did not export a config object`,
+    );
   }
   return config;
 }
 
-function asRegExp(value: string | RegExp | undefined, fallback: RegExp): RegExp {
+function asRegExp(
+  value: string | RegExp | undefined,
+  fallback: RegExp,
+): RegExp {
   if (!value) return fallback;
   if (value instanceof RegExp) return value;
   const match = /^\/(.+)\/([a-z]*)$/.exec(value);
   return match ? new RegExp(match[1]!, match[2]) : new RegExp(value);
 }
 
-function mergeValidator<T extends object>(
-  preset: unknown,
-  override: unknown,
-  fallback: T | false,
+function resolveValidator<T extends object>(
+  value: boolean | object | undefined,
+  defaults: T,
 ): T | false {
-  if (override === false) return false;
-  if (override === undefined) {
-    if (preset === false || preset === undefined) return false;
-    if (preset === true) return { ...fallback } as T;
-    return { ...(fallback as T), ...(preset as T) };
+  if (value === false || value === undefined) return false;
+  if (value === true) return { ...defaults };
+  return { ...defaults, ...value } as T;
+}
+
+function diagnosticMappingExists(
+  diagnostics: Record<string, string>,
+  validator: string,
+): boolean {
+  return Boolean(
+    diagnostics[`${validator}:*`] ||
+    diagnostics["*"] ||
+    Object.keys(diagnostics).some(
+      (key) => key.startsWith("SPEC-") && key.endsWith("*"),
+    ),
+  );
+}
+
+function validateRuleMappings(config: ResolvedConfig): void {
+  for (const validator of VALIDATOR_NAMES) {
+    if (config.validators[validator] === false) continue;
+    if (
+      config.ruleIds[validator] ||
+      diagnosticMappingExists(config.diagnostics, validator)
+    ) {
+      continue;
+    }
+    throw new Error(
+      `enabled validator ${validator} needs ruleIds.${validator} or diagnostics["${validator}:*"]`,
+    );
   }
-  if (override === true) {
-    if (preset && preset !== true) return { ...(fallback as T), ...(preset as T) };
-    return { ...fallback } as T;
+  if (
+    !config.ruleIds.internal &&
+    !config.diagnostics["internal:*"] &&
+    !config.diagnostics["SPEC-INTERNAL"]
+  ) {
+    throw new Error(
+      'configuration needs ruleIds.internal or diagnostics["SPEC-INTERNAL"]',
+    );
   }
-  const base =
-    preset && preset !== true && preset !== false
-      ? { ...(fallback as T), ...(preset as T) }
-      : { ...fallback } as T;
-  return { ...base, ...(override as T) };
+  if (config.validators.book !== false && !config.ruleIds.bookIgnore) {
+    const mapped =
+      config.diagnostics["SPEC-BOOK-IGNORE"] ||
+      config.diagnostics["SPEC-BOOK-TRACKED"];
+    if (!mapped) {
+      throw new Error(
+        "book validation needs ruleIds.bookIgnore or exact ignore/tracked diagnostic mappings",
+      );
+    }
+  }
+}
+
+export function resolveDiagnosticRule(
+  config: ResolvedConfig,
+  validator: keyof RuleIds | string,
+  code: string,
+): string {
+  const exact = config.diagnostics[code];
+  if (exact) return exact;
+  const wildcard = Object.entries(config.diagnostics)
+    .filter(([key]) => key.endsWith("*") && code.startsWith(key.slice(0, -1)))
+    .sort(([left], [right]) => right.length - left.length)[0]?.[1];
+  if (wildcard) return wildcard;
+  const validatorDefault = config.diagnostics[`${validator}:*`];
+  if (validatorDefault) return validatorDefault;
+  const globalDefault = config.diagnostics["*"];
+  if (globalDefault) return globalDefault;
+  const legacyDefault = config.ruleIds[validator as keyof RuleIds];
+  if (legacyDefault) return legacyDefault;
+  throw new Error(
+    `diagnostic ${code} from ${validator} has no governing rule mapping`,
+  );
 }
 
 export function resolveConfig(user: UserConfig): ResolvedConfig {
-  const preset = user.preset ? getPreset(user.preset) : {};
-  const merged: UserConfig = {
-    ...preset,
-    ...user,
-    ruleIds: { ...preset.ruleIds, ...user.ruleIds },
-    validators: { ...preset.validators, ...user.validators },
-    check: { ...preset.check, ...user.check },
-  };
-  const idPattern = asRegExp(merged.idPattern, /^SV-[A-Z]+-\d{3}$/);
+  const idPattern = asRegExp(user.idPattern, /^SV-[A-Z]+-\d{3}$/);
   const source = idPattern.source;
-  const inner = source.startsWith("^") && source.endsWith("$")
-    ? source.slice(1, -1)
-    : source;
-  const validatorsIn = {
-    ...preset.validators,
-    ...user.validators,
-  } as ValidatorOptions;
+  const inner =
+    source.startsWith("^") && source.endsWith("$")
+      ? source.slice(1, -1)
+      : source;
+  const input = user.validators ?? ({} as ValidatorOptions);
 
   const validators: ResolvedValidators = {
-    summary: mergeValidator(preset.validators?.summary, validatorsIn.summary, {}),
-    governance: mergeValidator(preset.validators?.governance, validatorsIn.governance, {
+    summary: resolveValidator(input.summary, {}),
+    governance: resolveValidator(input.governance, {
       extras: [],
+      normative: true,
+      proseLimits: true,
+      acceptance: true,
+      references: true,
+      changeMap: true,
     }),
-    verification: mergeValidator(
-      preset.validators?.verification,
-      validatorsIn.verification,
-      {
-        columns: 3,
-        statuses: ["Implemented", "In progress", "Partial"],
-        header: "Requirement",
+    verification: resolveValidator(input.verification, {
+      mode: "table" as const,
+      file: "verification.md",
+      headers: {
+        ids: ["Requirement", "Requirements", "ID"],
+        status: ["Status", "Audit state"],
+        evidence: ["Evidence", "Primary automated evidence"],
+        required: [],
       },
-    ),
-    book: mergeValidator(preset.validators?.book, validatorsIn.book, {
-      src: "src",
-      buildDir: "book",
+      idMode: "single" as const,
+      statuses: ["Implemented", "In progress", "Partial"],
+      statusMatch: "exact" as const,
+      rejectOrphans: true,
+      requireEvidence: true,
     }),
-    publicSurfaces: mergeValidator(
-      preset.validators?.publicSurfaces,
-      validatorsIn.publicSurfaces,
-      { map: "spec/public-surfaces.json" },
-    ),
-    storybookCatalog: mergeValidator(
-      preset.validators?.storybookCatalog,
-      validatorsIn.storybookCatalog,
-      { roots: ["src"] },
-    ),
-    storybookMirrors: mergeValidator(
-      preset.validators?.storybookMirrors,
-      validatorsIn.storybookMirrors,
-      { style: "src-spec-mdx" as const, directory: "src/spec" },
-    ),
-    qmd: mergeValidator(preset.validators?.qmd, validatorsIn.qmd, {
-      collection: "spec-validator",
+    book: resolveValidator(input.book, { src: "src", buildDir: "book" }),
+    publicSurfaces: resolveValidator(input.publicSurfaces, {
+      map: "spec/public-surfaces.json",
+      roots: ["src"],
+      requireCoverage: true,
+    }),
+    storybookCatalog: resolveValidator(input.storybookCatalog, {
+      roots: ["src"],
+      packageRoots: [],
+      storyOnlyName:
+        "(?:Demo|Harness|Fixture|Story(?:View|Surface|Frame|Control)?)$",
+      forbiddenSource:
+        "\\b(?:[A-Z][A-Za-z0-9]*(?:Demo|Harness|Fixture|Story(?:View|Surface|Frame|Control)?))\\b|\\bargs\\s*\\.",
+      plainTextLanguages: ["html", "markup", "svelte"],
+    }),
+    storybookMirrors: resolveValidator(input.storybookMirrors, {
+      style: "src-spec-mdx" as const,
+      directory: "src/spec",
+      titlePrefix: "Specification",
+      verifyTarget: true,
+      verifyTitle: false,
+      verifyContent: false,
+      previewPath: ".storybook/preview.ts",
+      verifyOrder: false,
+      registryEntryTemplate: 'source: "<chapter>"',
+    }),
+    repositoryLayout: resolveValidator(input.repositoryLayout, {
+      requiredFiles: [],
+      forbiddenPaths: [],
+      allowedRootMarkdown: [],
+    }),
+    packageDocs: resolveValidator(input.packageDocs, {
+      root: "packages",
+      packagePattern: "^(?:[^-]+-)?plugin-(.+)$",
+      chapterTemplate: "plugins/<name>.md",
+      identityTemplate: "<name>",
+    }),
+    qmd: resolveValidator(input.qmd, {
+      collection: "spec",
       configPath: ".qmd/index.yml",
     }),
-    markdownlint: mergeValidator(
-      preset.validators?.markdownlint,
-      validatorsIn.markdownlint,
-      { config: ".markdownlint-cli2.jsonc" },
-    ),
-    packageManifest: mergeValidator(
-      preset.validators?.packageManifest,
-      validatorsIn.packageManifest,
-      {
-        privateAllowed: true,
-        portableDependencies: false,
-        manifestPath: "manifest.json",
-      },
-    ),
-    specFirst: mergeValidator(preset.validators?.specFirst, validatorsIn.specFirst, {
-      changeMap: "spec/src/spec-governance.md",
+    markdownlint: resolveValidator(input.markdownlint, {
+      config: ".markdownlint-cli2.jsonc",
+    }),
+    packageManifest: resolveValidator(input.packageManifest, {
+      privateAllowed: true,
+      portableDependencies: false,
+      manifestPath: "manifest.json",
+    }),
+    specFirst: resolveValidator(input.specFirst, {
+      mode: "mapped" as const,
+      canonicalPattern: "^spec/src/(?!SUMMARY\\.md$).+\\.md$",
       ignore: [],
       rules: [],
       protected: [],
+      conditional: {},
     }),
   };
 
-  return {
-    preset: merged.preset ?? "custom",
+  const config: ResolvedConfig = {
+    name: user.name ?? "custom",
     idPattern,
     referencePattern: new RegExp(`\\b(?:${inner})\\b`, "g"),
-    specDir: merged.specDir ?? "spec/src",
-    requirementStyle: merged.requirementStyle ?? "heading",
-    headingTemplate: merged.headingTemplate ?? "## <ID> — <surface>",
-    maxWords: merged.maxWords ?? 80,
-    maxSentences: merged.maxSentences ?? 4,
-    minAcceptance: merged.minAcceptance ?? 2,
-    maxAcceptance: merged.maxAcceptance ?? 4,
-    ruleIds: { ...DEFAULT_RULE_IDS, ...merged.ruleIds },
+    specDir: user.specDir ?? "spec/src",
+    requirementStyle: user.requirementStyle ?? "heading",
+    headingTemplate: user.headingTemplate ?? "## <ID> — <surface>",
+    maxWords: user.maxWords ?? 80,
+    maxSentences: user.maxSentences ?? 4,
+    minAcceptance: user.minAcceptance ?? 2,
+    maxAcceptance: user.maxAcceptance ?? 4,
+    ruleIds: { ...EMPTY_RULE_IDS, ...user.ruleIds },
+    diagnostics: { ...user.diagnostics },
     validators,
-    plugins: merged.plugins ?? [],
-    check: merged.check ?? {},
+    plugins: user.plugins ?? [],
+    check: {
+      lanes: user.check?.lanes ?? [],
+      build: user.check?.build ?? true,
+      first: user.check?.first ?? true,
+    },
   };
+  validateRuleMappings(config);
+  return config;
 }
 
-export async function loadResolvedConfig(repoRoot: string): Promise<ResolvedConfig> {
+export async function loadResolvedConfig(
+  repoRoot: string,
+): Promise<ResolvedConfig> {
   return resolveConfig(await loadUserConfig(repoRoot));
 }

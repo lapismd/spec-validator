@@ -19,10 +19,7 @@ export function createReporter(
   stdout: NodeJS.WritableStream = process.stdout,
   stderr: NodeJS.WritableStream = process.stderr,
 ): Reporter {
-  const color = resolveColorEnabled(
-    output.color,
-    stdout as NodeJS.WriteStream,
-  );
+  const color = resolveColorEnabled(output.color, stdout as NodeJS.WriteStream);
   const paint = createPalette(output.json ? false : color);
 
   return {
@@ -40,9 +37,13 @@ export function createReporter(
       }
       if (report.findings) {
         if (!report.ok) {
-          stderr.write(`${paint.red(paint.bold("Specification validation failed:"))}\n`);
+          stderr.write(
+            `${paint.red(paint.bold("Specification validation failed:"))}\n`,
+          );
           for (const finding of report.findings) {
-            stderr.write(`${paint.red(formatPrettyDiagnostic(finding, paint))}\n`);
+            stderr.write(
+              `${paint.red(formatPrettyDiagnostic(finding, paint))}\n`,
+            );
           }
           return;
         }
@@ -53,6 +54,21 @@ export function createReporter(
       }
       if (report.checks) {
         writeDoctorPretty(report.checks, report, paint, stdout);
+        return;
+      }
+      if (report.lanes) {
+        for (const lane of report.lanes) {
+          const state = lane.ok ? paint.green("passed") : paint.red("failed");
+          stdout.write(`${paint.bold(lane.name)} ${state}.\n`);
+          if (lane.stdout) stdout.write(`${lane.stdout}\n`);
+          if (lane.stderr) stderr.write(`${lane.stderr}\n`);
+          for (const finding of lane.findings ?? []) {
+            stderr.write(
+              `${paint.red(formatPrettyDiagnostic(finding, paint))}\n`,
+            );
+          }
+        }
+        if (report.message) stdout.write(`${report.message}\n`);
         return;
       }
       if (report.message) stdout.write(`${report.message}\n`);
@@ -81,7 +97,9 @@ function writeDoctorPretty(
   };
   stdout.write(`${paint.bold("Spec validator doctor")}\n`);
   for (const check of checks) {
-    stdout.write(`  ${mark[check.status]}  ${paint.bold(check.name)}  ${check.message}\n`);
+    stdout.write(
+      `  ${mark[check.status]}  ${paint.bold(check.name)}  ${check.message}\n`,
+    );
   }
   const failed = checks.filter((check) => check.status === "fail").length;
   const warned = checks.filter((check) => check.status === "warn").length;

@@ -4,11 +4,13 @@ import path from "node:path";
 
 import { diagnostic } from "../diagnostics.js";
 import { toPosix } from "../model.js";
-import type { Diagnostic, ValidationContext } from "../types.js";
+import type {
+  Diagnostic,
+  ResolvedValidators,
+  ValidationContext,
+} from "../types.js";
 
 export const name = "specFirst";
-
-const CANONICAL_SPEC_PATTERN = /^spec\/src\/(?!SUMMARY\.md$).+\.md$/;
 
 export interface SpecFirstChange {
   path: string;
@@ -32,33 +34,81 @@ function normalizePath(filePath: string): string {
 
 export function classifySpecFirstChanges(
   inputChanges: Array<string | SpecFirstChange>,
-  options: { ignore: string[]; rules: Array<{ pattern: string; chapters: string[] }>; protected: string[] },
+  inputOptions: Partial<Exclude<ResolvedValidators["specFirst"], false>>,
 ): SpecFirstResult {
+  const options: Exclude<ResolvedValidators["specFirst"], false> = {
+    mode: "mapped",
+    canonicalPattern: "^spec/src/(?!SUMMARY\\.md$).+\\.md$",
+    ignore: [],
+    rules: [],
+    protected: [],
+    conditional: {},
+    ...inputOptions,
+  };
+  const canonicalSpecPattern = new RegExp(options.canonicalPattern);
   const ignore = options.ignore.map((pattern) => new RegExp(pattern));
   const rules = options.rules.map((rule) => ({
+    ...rule,
     pattern: new RegExp(rule.pattern),
-    chapters: rule.chapters,
   }));
-  const protectedPatterns = options.protected.map((pattern) => new RegExp(pattern));
+  const protectedPatterns = options.protected.map(
+    (pattern) => new RegExp(pattern),
+  );
   const changes = new Map<string, SpecFirstChange>();
   for (const input of inputChanges) {
     const change = typeof input === "string" ? { path: input } : input;
     const normalized = normalizePath(change.path);
     if (!normalized) continue;
-    changes.set(normalized, { path: normalized, changedLines: change.changedLines ?? [] });
+    changes.set(normalized, {
+      path: normalized,
+      changedLines: change.changedLines ?? [],
+    });
   }
   const files = [...changes.keys()].sort();
-  const specFiles = files.filter((file) => CANONICAL_SPEC_PATTERN.test(file));
+  const specFiles = files.filter((file) => canonicalSpecPattern.test(file));
   const protectedFiles: string[] = [];
   const required = new Map<string, string[]>();
   const unmappedProductionFiles: string[] = [];
 
   for (const file of files) {
-    if (CANONICAL_SPEC_PATTERN.test(file)) continue;
-    if (ignore.some((pattern) => pattern.test(file))) continue;
-    const matched = rules.filter((rule) => rule.pattern.test(file));
+    if (canonicalSpecPattern.test(file)) continue;
+    const change = changes.get(file)!;
+    const matched = rules.flatMap((rule) => {
+      const match = rule.pattern.exec(file);
+      rule.pattern.lastIndex = 0;
+      if (!match) return [];
+      if (rule.changedLines) {
+        const changed = new RegExp(rule.changedLines);
+        if (
+          change.changedLines?.length &&
+          !change.changedLines.some((line) => changed.test(line))
+        ) {
+          return [];
+        }
+      }
+      const capture = match[rule.captureGroup ?? 1];
+      const chapters =
+        rule.chapters ??
+        (capture ? rule.captureMap?.[capture] : undefined) ??
+        rule.defaultChapters ??
+        [];
+      return [{ chapters }];
+    });
+    if (!matched.length && ignore.some((pattern) => pattern.test(file)))
+      continue;
+    const conditional = options.conditional[file];
+    const conditionallyProtected = conditional
+      ? !change.changedLines?.length ||
+        change.changedLines.some((line) => new RegExp(conditional).test(line))
+      : false;
     if (matched.length) {
       protectedFiles.push(file);
+      if (
+        options.mode === "mapped" &&
+        matched.every((rule) => !rule.chapters.length)
+      ) {
+        unmappedProductionFiles.push(file);
+      }
       for (const rule of matched) {
         for (const chapter of rule.chapters) {
           const owners = required.get(chapter) ?? [];
@@ -66,13 +116,22 @@ export function classifySpecFirstChanges(
           required.set(chapter, owners);
         }
       }
-    } else if (protectedPatterns.some((pattern) => pattern.test(file))) {
-      unmappedProductionFiles.push(file);
+    } else if (
+      conditionallyProtected ||
+      protectedPatterns.some((pattern) => pattern.test(file))
+    ) {
+      if (options.mode === "mapped") unmappedProductionFiles.push(file);
+      else protectedFiles.push(file);
     }
   }
 
   const requiredChapters = [...required.keys()].sort();
-  const missingChapters = requiredChapters.filter((chapter) => !specFiles.includes(chapter));
+  const missingChapters =
+    options.mode === "any"
+      ? protectedFiles.length && !specFiles.length
+        ? [contextualAnyChapter(options)]
+        : []
+      : requiredChapters.filter((chapter) => !specFiles.includes(chapter));
   return {
     files,
     specFiles,
@@ -80,15 +139,24 @@ export function classifySpecFirstChanges(
     requiredChapters,
     missingChapters,
     unmappedProductionFiles,
-    requiresSpec: protectedFiles.length > 0 || unmappedProductionFiles.length > 0,
+    requiresSpec:
+      protectedFiles.length > 0 || unmappedProductionFiles.length > 0,
     ok: missingChapters.length === 0 && unmappedProductionFiles.length === 0,
   };
+}
+
+function contextualAnyChapter(
+  _options: Exclude<ResolvedValidators["specFirst"], false>,
+): string {
+  return "spec/src/<canonical-chapter>.md";
 }
 
 function parseDiffHeader(line: string): [string, string] | null {
   const source = line.slice("diff --git ".length);
   const match =
-    /^(?:"((?:[^"\\]|\\.)*)"|(\S+))\s+(?:"((?:[^"\\]|\\.)*)"|(\S+))$/.exec(source);
+    /^(?:"((?:[^"\\]|\\.)*)"|(\S+))\s+(?:"((?:[^"\\]|\\.)*)"|(\S+))$/.exec(
+      source,
+    );
   if (!match) return null;
   const decode = (quoted: string | undefined, plain: string | undefined) => {
     const value = quoted === undefined ? plain : JSON.parse(`"${quoted}"`);
@@ -119,7 +187,11 @@ export function parseUnifiedDiff(source: string): SpecFirstChange[] {
       }
       continue;
     }
-    if (!currentPaths.length || line.startsWith("+++") || line.startsWith("---"))
+    if (
+      !currentPaths.length ||
+      line.startsWith("+++") ||
+      line.startsWith("---")
+    )
       continue;
     if (line.startsWith("+") || line.startsWith("-")) {
       for (const currentPath of currentPaths)
@@ -127,7 +199,9 @@ export function parseUnifiedDiff(source: string): SpecFirstChange[] {
     }
   }
   if (source.trim() && !sawHeader) {
-    throw new Error("non-empty change-set output contained no unified diff headers");
+    throw new Error(
+      "non-empty change-set output contained no unified diff headers",
+    );
   }
   return [...changes.values()];
 }
@@ -153,12 +227,20 @@ export function changesFromVcs(
   repoRoot: string,
   execute = run,
 ): SpecFirstChange[] {
-  if (options.files?.length) return options.files.map((file) => ({ path: toPosix(file) }));
+  if (options.files?.length)
+    return options.files.map((file) => ({ path: toPosix(file) }));
   if (options.base) {
     return parseUnifiedDiff(
       execute(
         "git",
-        ["diff", "--no-ext-diff", "--unified=0", options.base, options.head ?? "HEAD", "--"],
+        [
+          "diff",
+          "--no-ext-diff",
+          "--unified=0",
+          options.base,
+          options.head ?? "HEAD",
+          "--",
+        ],
         repoRoot,
       ),
     );
@@ -167,14 +249,27 @@ export function changesFromVcs(
     return parseUnifiedDiff(
       execute(
         "jj",
-        ["--no-pager", "--color=never", "diff", "--git", "--from", "@-", "--to", "@"],
+        [
+          "--no-pager",
+          "--color=never",
+          "diff",
+          "--git",
+          "--from",
+          "@-",
+          "--to",
+          "@",
+        ],
         repoRoot,
       ),
     );
   }
   if (existsSync(path.join(repoRoot, ".git"))) {
     return parseUnifiedDiff(
-      execute("git", ["diff", "--no-ext-diff", "--unified=0", "HEAD", "--"], repoRoot),
+      execute(
+        "git",
+        ["diff", "--no-ext-diff", "--unified=0", "HEAD", "--"],
+        repoRoot,
+      ),
     );
   }
   throw new Error(

@@ -4,10 +4,10 @@ QMD is a local discovery cache over canonical Markdown. It is not an authority a
 
 ## Public surface coverage
 
-| Surface | Public boundary | Requirement |
-| --- | --- | --- |
-| Discovery commands | Search and QMD | SV-QMD-001 |
-| Host and fallback | Search and QMD | SV-QMD-002 |
+| Surface            | Public boundary | Requirement |
+| ------------------ | --------------- | ----------- |
+| Discovery commands | Search and QMD  | SV-QMD-001  |
+| Host and fallback  | Search and QMD  | SV-QMD-002  |
 
 ## SV-QMD-001 — Discovery commands
 
@@ -28,5 +28,5 @@ QMD is a local discovery cache over canonical Markdown. It is not an authority a
 
 - The wrapper MUST resolve the consumer-local `node_modules/.bin/qmd` and capture its stdout and stderr.
 - A Node ABI mismatch MUST tell the operator to reinstall under the active Node version.
-- A missing native binding MUST tell the operator to approve `better-sqlite3` and `node-llama-cpp` in the root pnpm config and reinstall.
+- A missing native binding MUST tell the operator to allow `better-sqlite3` and `node-llama-cpp` builds in `pnpm-workspace.yaml` and reinstall.
 - The fallback MUST be `rg -n -i --glob '*.md' '<query>' spec/src`.

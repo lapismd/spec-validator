@@ -5,7 +5,12 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
-export const DEFAULT_CLI_PATH = path.resolve(SCRIPT_DIR, "..", "dist", "cli.js");
+export const DEFAULT_CLI_PATH = path.resolve(
+  SCRIPT_DIR,
+  "..",
+  "dist",
+  "cli.js",
+);
 export const CLI_SHEBANG = "#!/usr/bin/env node";
 
 export function prepareCliBin(cliPath = DEFAULT_CLI_PATH) {

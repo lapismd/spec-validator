@@ -32,6 +32,6 @@ as part of CI or `spec-validator check`.
 
 ## Setup
 
-- `spec-validator init --preset <name>` writes config and script aliases.
+- `spec-validator init --profile heading|table` detects the local requirement family and writes a repository-owned config plus script aliases.
 - `spec-validator skill install` writes only `~/.agents/skills/spec-validator/SKILL.md`.
-- `spec-validator doctor --fix` repairs ignore rules, book config, scripts, and this skill path.
+- `spec-validator doctor --fix` repairs safe repository wiring; add `--skill` only when global skill installation was explicitly requested.

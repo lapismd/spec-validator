@@ -59,7 +59,8 @@ export function validate(context: ValidationContext) {
           rule,
           file: `${context.config.specDir}/SUMMARY.md`,
           subject: target,
-          message: "indexed chapter does not exist; remove or correct the entry",
+          message:
+            "indexed chapter does not exist; remove or correct the entry",
         }),
       );
     }

@@ -68,7 +68,10 @@ export function validate(context: ValidationContext) {
     }
   }
   if (options.manifest) {
-    const manifestPath = path.join(context.model.repoRoot, options.manifestPath);
+    const manifestPath = path.join(
+      context.model.repoRoot,
+      options.manifestPath,
+    );
     if (!existsSync(manifestPath)) {
       findings.push(
         diagnostic({

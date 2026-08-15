@@ -4,41 +4,53 @@ Consumers configure the CLI with `spec-validator.config.ts`, `.mjs`, or `.json` 
 
 ## Public surface coverage
 
-| Surface | Public boundary | Requirement |
-| --- | --- | --- |
-| Config files and presets | Configuration | SV-CFG-001 |
-| Validator enablement | Configuration | SV-CFG-002 |
-| Consumer rule IDs | Configuration | SV-CFG-003 |
+| Surface                     | Public boundary | Requirement |
+| --------------------------- | --------------- | ----------- |
+| Config files and profiles   | Configuration   | SV-CFG-001  |
+| Validator enablement        | Configuration   | SV-CFG-002  |
+| Consumer rule IDs           | Configuration   | SV-CFG-003  |
+| Repository policy ownership | Configuration   | SV-CFG-004  |
 
-## SV-CFG-001 — Config files and presets
+## SV-CFG-001 — Config files and profiles
 
-**Requirement.** The loader MUST read the first existing `spec-validator.config.ts`, `.mjs`, or `.json` from the consumer root and MUST apply a named preset before consumer overrides.
+**Requirement.** The loader MUST read the first existing `spec-validator.config.ts`, `.mjs`, or `.json` from the consumer root and MUST resolve typed consumer configuration with optional neutral profiles.
 
 ### Acceptance details
 
 - `defineConfig` MUST be the supported TypeScript helper.
-- Unknown preset names MUST fail as an internal configuration error.
 - A missing config MUST fail `validate`, `check`, and `doctor` unless `init` is creating one.
-- Presets MUST exist for `spec-validator`, `design-core`, `lapis-notes`, `mira`, `visual-delta`, and `cv-roles`.
+- Profiles MUST describe reusable document or source shapes and MUST NOT be named for a consumer repository.
+- Later configuration fragments MUST replace earlier validator options unless an explicit merge helper is used.
 
 ## SV-CFG-002 — Validator enablement
 
-**Requirement.** Built-in validators MUST stay off unless a preset or explicit config enables them, and `false` MUST disable a preset validator.
+**Requirement.** Built-in validators MUST stay off unless an explicit config or neutral profile enables them, and `false` MUST disable an earlier profile validator.
 
 ### Acceptance details
 
-- An options object MUST replace the preset options for that validator.
+- An options object MUST replace earlier options for that validator.
 - CLI `--only` MUST run only the named validators for that invocation.
 - CLI `--skip` MUST disable the named validators for that invocation.
 - `plugins` MUST load additional `{ name, validate }` modules from the consumer root.
 
 ## SV-CFG-003 — Consumer rule IDs
 
-**Requirement.** Diagnostic `rule` fields MUST use consumer-owned requirement IDs supplied by config or preset, and the engine MUST NOT rewrite those IDs to `SV-*` in a foreign repository.
+**Requirement.** Diagnostic `rule` fields MUST use consumer-owned requirement IDs supplied by configuration, with exact diagnostic-code overrides available over validator defaults.
 
 ### Acceptance details
 
-- Each built-in validator MUST read its rule IDs from resolved config.
-- The `spec-validator` preset MUST use `SV-*` IDs.
-- Foreign presets MUST keep their existing `DC-*`, `LN-*`, `MIRA-*`, `VD-*`, or `LPR-*` IDs.
-- A missing rule ID mapping MUST fail configuration loading.
+- Every enabled built-in MUST have a validator default or mappings for all emitted diagnostic codes.
+- Exact diagnostic mappings MUST override validator defaults so one validator may report findings governed by different requirements.
+- A missing rule mapping MUST fail configuration loading rather than inherit an `SV-*` ID.
+- Internal failures after configuration loads MUST use the configured internal rule.
+
+## SV-CFG-004 — Repository policy ownership
+
+**Requirement.** Consumer repositories MUST own their paths, requirement IDs, statuses, document dialects, validator selection, and additional check lanes while the package owns reusable mechanisms.
+
+### Acceptance details
+
+- The package MUST NOT contain repository-named presets or foreign path maps.
+- Consumer configuration MUST be able to express mapped or any-chapter spec-first policy, grouped verification rows, and repository-specific Storybook roots.
+- Structured additional lanes MUST use separate `name`, `command`, and `args` fields without shell-word splitting.
+- A repository-specific check MAY remain a named lane until a reusable validator exists.

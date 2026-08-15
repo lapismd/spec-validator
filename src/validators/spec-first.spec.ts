@@ -34,3 +34,38 @@ test("parseUnifiedDiff reads git headers", () => {
   );
   assert.equal(changes[0]?.path, "src/cli.ts");
 });
+
+test("explicit mappings override ordinary ignores and capture map chapters", () => {
+  const result = classifySpecFirstChanges(
+    ["src/shared/forms/form-field/component.ts", "spec/src/forms.md"],
+    {
+      ignore: ["^src/shared/forms/"],
+      rules: [
+        {
+          pattern: "^src/shared/forms/([^/]+)/",
+          captureMap: { "form-field": ["spec/src/forms.md"] },
+        },
+      ],
+      protected: ["^src/"],
+    },
+  );
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.protectedFiles, [
+    "src/shared/forms/form-field/component.ts",
+  ]);
+});
+
+test("any-chapter policy honors conditional changed-line protection", () => {
+  const result = classifySpecFirstChanges(
+    [
+      { path: "package.json", changedLines: ['"visual-delta": true'] },
+      "spec/src/verification.md",
+    ],
+    {
+      mode: "any",
+      conditional: { "package.json": "visual-delta" },
+    },
+  );
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.protectedFiles, ["package.json"]);
+});

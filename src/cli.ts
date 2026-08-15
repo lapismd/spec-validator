@@ -22,8 +22,18 @@ export async function runCli(
   const parsed = parseGlobalArgv(argv);
   const reporter = createReporter(parsed.output);
   if (parsed.help || !parsed.command) {
-    reporter.writeLine(usage());
-    return parsed.help ? 0 : 1;
+    const exitCode = parsed.help ? 0 : 2;
+    if (reporter.json) {
+      reporter.writeReport({
+        version: 1,
+        ok: parsed.help,
+        exitCode,
+        message: usage(),
+      });
+    } else {
+      reporter.writeLine(usage());
+    }
+    return exitCode;
   }
   try {
     switch (parsed.command) {
@@ -50,17 +60,40 @@ export async function runCli(
       case "skill":
         return skillCommand(repoRoot, parsed.rest, reporter);
       default:
-        reporter.writeError(`Unknown command: ${parsed.command}`);
-        reporter.writeError(usage());
+        if (reporter.json) {
+          reporter.writeReport({
+            version: 1,
+            ok: false,
+            exitCode: 2,
+            message: `Unknown command: ${parsed.command}\n${usage()}`,
+          });
+        } else {
+          reporter.writeError(`Unknown command: ${parsed.command}`);
+          reporter.writeError(usage());
+        }
         return 2;
     }
   } catch (error) {
     if (error instanceof UsageError) {
-      reporter.writeError(error.message);
-      reporter.writeError(usage());
+      if (reporter.json) {
+        reporter.writeReport({
+          version: 1,
+          ok: false,
+          exitCode: 2,
+          message: `${error.message}\n${usage()}`,
+        });
+      } else {
+        reporter.writeError(error.message);
+        reporter.writeError(usage());
+      }
       return 2;
     }
-    reporter.writeError(error instanceof Error ? error.message : String(error));
+    const message = error instanceof Error ? error.message : String(error);
+    if (reporter.json) {
+      reporter.writeReport({ version: 1, ok: false, exitCode: 2, message });
+    } else {
+      reporter.writeError(message);
+    }
     return 2;
   }
 }

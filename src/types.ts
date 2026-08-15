@@ -32,7 +32,12 @@ export interface AcceptanceSection {
   line: number;
   present: boolean;
   nonBullet: string[];
-  bullets: Array<{ statement: string; line: number; words: number; sentences: number }>;
+  bullets: Array<{
+    statement: string;
+    line: number;
+    words: number;
+    sentences: number;
+  }>;
 }
 
 export interface CoverageRow {
@@ -80,6 +85,7 @@ export type RequirementStyle = "heading" | "table";
 export type MirrorStyle = "src-spec-mdx" | "stories-spec";
 export type ColorMode = "auto" | "always" | "never";
 
+/** Validator-level defaults. Exact `diagnostics` entries override these values. */
 export interface RuleIds {
   summary: string;
   governance: string;
@@ -89,6 +95,8 @@ export interface RuleIds {
   publicSurfaces: string;
   storybookCatalog: string;
   storybookMirrors: string;
+  repositoryLayout: string;
+  packageDocs: string;
   qmd: string;
   markdownlint: string;
   packageManifest: string;
@@ -96,27 +104,95 @@ export interface RuleIds {
   internal: string;
 }
 
+export type DiagnosticRuleMap = Record<string, string>;
+
 export interface SpecFirstRule {
   pattern: string;
-  chapters: string[];
+  chapters?: string[];
+  captureMap?: Record<string, string[]>;
+  captureGroup?: number;
+  defaultChapters?: string[];
+  changedLines?: string;
+}
+
+export interface CheckLaneConfig {
+  name: string;
+  command: string;
+  args?: string[];
+}
+
+export interface VerificationOptions {
+  mode?: "table" | "references";
+  file?: string;
+  section?: string;
+  headers?: {
+    ids: string[];
+    status?: string[];
+    evidence?: string[];
+    required?: string[][];
+  };
+  idMode?: "single" | "grouped";
+  statuses?: string[];
+  statusMatch?: "exact" | "prefix";
+  rejectOrphans?: boolean;
+  requireEvidence?: boolean;
 }
 
 export interface ValidatorOptions {
   summary?: boolean | Record<string, never>;
-  governance?: boolean | { extras?: string[] };
-  verification?:
+  governance?:
     | boolean
     | {
-        columns?: number;
-        statuses?: string[];
-        header?: string;
+        extras?: string[];
+        normative?: boolean;
+        proseLimits?: boolean;
+        acceptance?: boolean;
+        references?: boolean;
+        changeMap?: boolean;
       };
+  verification?: boolean | VerificationOptions;
   book?: boolean | { src?: string; buildDir?: string };
-  publicSurfaces?: boolean | { map?: string };
+  publicSurfaces?:
+    boolean | { map?: string; roots?: string[]; requireCoverage?: boolean };
   storybookCatalog?:
     | boolean
-    | { roots?: string[]; packageName?: string };
-  storybookMirrors?: boolean | { style?: MirrorStyle; directory?: string };
+    | {
+        roots?: string[];
+        packageRoots?: string[];
+        packageName?: string;
+        storyOnlyName?: string;
+        forbiddenSource?: string;
+        plainTextLanguages?: string[];
+      };
+  storybookMirrors?:
+    | boolean
+    | {
+        style?: MirrorStyle;
+        directory?: string;
+        titlePrefix?: string;
+        verifyTarget?: boolean;
+        verifyTitle?: boolean;
+        verifyContent?: boolean;
+        previewPath?: string;
+        verifyOrder?: boolean;
+        registryPath?: string;
+        registryEntryTemplate?: string;
+      };
+  repositoryLayout?:
+    | boolean
+    | {
+        requiredFiles?: string[];
+        forbiddenPaths?: string[];
+        allowedRootMarkdown?: string[];
+      };
+  packageDocs?:
+    | boolean
+    | {
+        root?: string;
+        packagePattern?: string;
+        chapterTemplate?: string;
+        identityTemplate?: string;
+      };
   qmd?: boolean | { collection?: string; configPath?: string };
   markdownlint?: boolean | { config?: string };
   packageManifest?:
@@ -132,15 +208,17 @@ export interface ValidatorOptions {
   specFirst?:
     | boolean
     | {
-        changeMap?: string;
+        mode?: "mapped" | "any";
+        canonicalPattern?: string;
         ignore?: string[];
         rules?: SpecFirstRule[];
         protected?: string[];
+        conditional?: Record<string, string>;
       };
 }
 
 export interface UserConfig {
-  preset?: string;
+  name?: string;
   idPattern?: string | RegExp;
   specDir?: string;
   requirementStyle?: RequirementStyle;
@@ -150,13 +228,18 @@ export interface UserConfig {
   minAcceptance?: number;
   maxAcceptance?: number;
   ruleIds?: Partial<RuleIds>;
+  diagnostics?: DiagnosticRuleMap;
   validators?: ValidatorOptions;
   plugins?: string[];
-  check?: { tests?: string | boolean };
+  check?: {
+    lanes?: CheckLaneConfig[];
+    build?: boolean;
+    first?: boolean;
+  };
 }
 
 export interface ResolvedConfig {
-  preset: string;
+  name: string;
   idPattern: RegExp;
   referencePattern: RegExp;
   specDir: string;
@@ -167,19 +250,73 @@ export interface ResolvedConfig {
   minAcceptance: number;
   maxAcceptance: number;
   ruleIds: RuleIds;
+  diagnostics: DiagnosticRuleMap;
   validators: ResolvedValidators;
   plugins: string[];
-  check: { tests?: string | boolean };
+  check: {
+    lanes: CheckLaneConfig[];
+    build: boolean;
+    first: boolean;
+  };
 }
 
 export interface ResolvedValidators {
   summary: false | Record<string, never>;
-  governance: false | { extras: string[] };
-  verification: false | { columns: number; statuses: string[]; header: string };
+  governance:
+    | false
+    | {
+        extras: string[];
+        normative: boolean;
+        proseLimits: boolean;
+        acceptance: boolean;
+        references: boolean;
+        changeMap: boolean;
+      };
+  verification:
+    | false
+    | (Required<Omit<VerificationOptions, "section">> & { section?: string });
   book: false | { src: string; buildDir: string };
-  publicSurfaces: false | { map: string };
-  storybookCatalog: false | { roots: string[]; packageName?: string };
-  storybookMirrors: false | { style: MirrorStyle; directory: string };
+  publicSurfaces:
+    false | { map: string; roots: string[]; requireCoverage: boolean };
+  storybookCatalog:
+    | false
+    | {
+        roots: string[];
+        packageRoots: string[];
+        packageName?: string;
+        storyOnlyName: string;
+        forbiddenSource: string;
+        plainTextLanguages: string[];
+      };
+  storybookMirrors:
+    | false
+    | {
+        style: MirrorStyle;
+        directory: string;
+        titlePrefix: string;
+        verifyTarget: boolean;
+        verifyTitle: boolean;
+        verifyContent: boolean;
+        previewPath: string;
+        verifyOrder: boolean;
+        registryPath?: string;
+        registryEntryTemplate: string;
+      };
+  repositoryLayout:
+    | false
+    | {
+        requiredFiles: string[];
+        forbiddenPaths: string[];
+        allowedRootMarkdown: string[];
+      };
+  packageDocs:
+    | false
+    | {
+        root: string;
+        packagePattern: string;
+        chapterTemplate: string;
+        identityTemplate: string;
+      };
   qmd: false | { collection: string; configPath: string };
   markdownlint: false | { config: string };
   packageManifest:
@@ -195,10 +332,12 @@ export interface ResolvedValidators {
   specFirst:
     | false
     | {
-        changeMap: string;
+        mode: "mapped" | "any";
+        canonicalPattern: string;
         ignore: string[];
         rules: SpecFirstRule[];
         protected: string[];
+        conditional: Record<string, string>;
       };
 }
 
@@ -207,12 +346,25 @@ export interface OutputOptions {
   json: boolean;
 }
 
+export interface CheckLaneResult {
+  name: string;
+  ok: boolean;
+  exitCode: number;
+  findings?: Diagnostic[];
+  stdout?: string;
+  stderr?: string;
+  stats?: Record<string, number | string>;
+}
+
 export interface JsonReport {
   version: 1;
   ok: boolean;
   exitCode: number;
   findings?: Diagnostic[];
   checks?: DoctorCheck[];
+  lanes?: CheckLaneResult[];
+  validators?: Array<{ name: string; enabled: boolean; options: unknown }>;
+  results?: unknown;
   stats?: Record<string, number | string>;
   message?: string;
 }

@@ -17,14 +17,20 @@ export function validate(context: ValidationContext) {
     context.model.repoRoot,
     "node_modules",
     ".bin",
-    process.platform === "win32" ? "markdownlint-cli2.cmd" : "markdownlint-cli2",
+    process.platform === "win32"
+      ? "markdownlint-cli2.cmd"
+      : "markdownlint-cli2",
   );
-  const result = spawnSync(existsSync(binary) ? binary : "markdownlint-cli2", args, {
-    cwd: context.model.repoRoot,
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
-    shell: process.platform === "win32",
-  });
+  const result = spawnSync(
+    existsSync(binary) ? binary : "markdownlint-cli2",
+    args,
+    {
+      cwd: context.model.repoRoot,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      shell: process.platform === "win32",
+    },
+  );
   if (
     !existsSync(binary) &&
     result.error &&
@@ -35,7 +41,8 @@ export function validate(context: ValidationContext) {
         code: "SPEC-MDLINT-MISSING",
         rule,
         file: options.config,
-        message: "markdownlint-cli2 is not installed; add it as a development dependency",
+        message:
+          "markdownlint-cli2 is not installed; add it as a development dependency",
       }),
     ];
   }

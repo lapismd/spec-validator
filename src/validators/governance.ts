@@ -1,7 +1,11 @@
 import path from "node:path";
 
 import { diagnostic } from "../diagnostics.js";
-import { NORMATIVE_PATTERN, splitMarkdownTableRow, withoutFencedCode } from "../model.js";
+import {
+  NORMATIVE_PATTERN,
+  splitMarkdownTableRow,
+  withoutFencedCode,
+} from "../model.js";
 import type { ValidationContext } from "../types.js";
 
 export const name = "governance";
@@ -11,13 +15,13 @@ function lineForOffset(source: string, offset: number): number {
 }
 
 export function validate(context: ValidationContext) {
-  const findings = [];
+  const findings: ReturnType<typeof diagnostic>[] = [];
   const rule = context.config.ruleIds.governance;
-  const extras =
-    context.config.validators.governance === false
-      ? []
-      : context.config.validators.governance.extras;
-  const { maxWords, maxSentences, minAcceptance, maxAcceptance } = context.config;
+  const options = context.config.validators.governance;
+  if (options === false) return findings;
+  const extras = options.extras;
+  const { maxWords, maxSentences, minAcceptance, maxAcceptance } =
+    context.config;
 
   for (const parsed of context.model.parsed) {
     for (const row of parsed.malformed) {
@@ -48,7 +52,7 @@ export function validate(context: ValidationContext) {
       );
       continue;
     }
-    if (!NORMATIVE_PATTERN.test(definition.statement)) {
+    if (options.normative && !NORMATIVE_PATTERN.test(definition.statement)) {
       findings.push(
         diagnostic({
           code: "SPEC-REQ-NORMATIVE",
@@ -61,7 +65,7 @@ export function validate(context: ValidationContext) {
         }),
       );
     }
-    if (definition.words > maxWords) {
+    if (options.proseLimits && definition.words > maxWords) {
       findings.push(
         diagnostic({
           code: "SPEC-REQ-WORDS",
@@ -73,7 +77,7 @@ export function validate(context: ValidationContext) {
         }),
       );
     }
-    if (definition.sentences > maxSentences) {
+    if (options.proseLimits && definition.sentences > maxSentences) {
       findings.push(
         diagnostic({
           code: "SPEC-REQ-SENTENCES",
@@ -103,7 +107,7 @@ export function validate(context: ValidationContext) {
     }
   }
 
-  if (context.config.requirementStyle === "heading") {
+  if (options.acceptance && context.config.requirementStyle === "heading") {
     for (const section of context.model.acceptanceSections) {
       if (!section.present) {
         findings.push(
@@ -125,7 +129,8 @@ export function validate(context: ValidationContext) {
             file: section.file,
             line: section.line,
             subject: section.id,
-            message: "acceptance details may contain only atomic bullet statements",
+            message:
+              "acceptance details may contain only atomic bullet statements",
           }),
         );
       }
@@ -154,7 +159,8 @@ export function validate(context: ValidationContext) {
               file: section.file,
               line: bullet.line,
               subject: section.id,
-              message: "acceptance bullet contains more than one sentence; split it",
+              message:
+                "acceptance bullet contains more than one sentence; split it",
             }),
           );
         }
@@ -174,36 +180,45 @@ export function validate(context: ValidationContext) {
     }
   }
 
-  const references = [
-    ...context.model.files,
-    ...extras
-      .map((relative) => ({
-        relativePath: relative,
-        source: context.readOptional(path.join(context.model.repoRoot, relative)),
-      }))
-      .filter((file) => file.source !== null)
-      .map((file) => ({ relativePath: file.relativePath, source: file.source! })),
-  ];
-  for (const file of references) {
-    const source = withoutFencedCode(file.source);
-    for (const match of source.matchAll(context.config.referencePattern)) {
-      if (context.model.definitionsById.has(match[0]!)) continue;
-      findings.push(
-        diagnostic({
-          code: "SPEC-REQ-UNKNOWN",
-          rule,
-          file: file.relativePath,
-          line: lineForOffset(source, match.index ?? 0),
-          subject: match[0],
-          message: "requirement reference has no canonical definition",
-        }),
-      );
+  if (options.references) {
+    const references = [
+      ...context.model.files,
+      ...extras
+        .map((relative) => ({
+          relativePath: relative,
+          source: context.readOptional(
+            path.join(context.model.repoRoot, relative),
+          ),
+        }))
+        .filter((file) => file.source !== null)
+        .map((file) => ({
+          relativePath: file.relativePath,
+          source: file.source!,
+        })),
+    ];
+    for (const file of references) {
+      const source = withoutFencedCode(file.source);
+      for (const match of source.matchAll(context.config.referencePattern)) {
+        if (context.model.definitionsById.has(match[0]!)) continue;
+        findings.push(
+          diagnostic({
+            code: "SPEC-REQ-UNKNOWN",
+            rule,
+            file: file.relativePath,
+            line: lineForOffset(source, match.index ?? 0),
+            subject: match[0],
+            message: "requirement reference has no canonical definition",
+          }),
+        );
+      }
     }
   }
 
-  const changeMap = context.model.canonicalFiles.find(
-    (file) => file.chapterPath === "spec-governance.md",
-  );
+  const changeMap = options.changeMap
+    ? context.model.canonicalFiles.find(
+        (file) => file.chapterPath === "spec-governance.md",
+      )
+    : undefined;
   if (changeMap) {
     const lines = changeMap.source.split(/\r?\n/);
     const start = lines.findIndex((line) => /^##\s+Change map\s*$/.test(line));
@@ -212,7 +227,8 @@ export function validate(context: ValidationContext) {
       for (let index = start + 1; index < lines.length; index += 1) {
         if (/^##\s+/.test(lines[index]!)) break;
         const cells = splitMarkdownTableRow(lines[index]!);
-        if (!cells || cells.length !== 2 || cells[0] === "Protected area") continue;
+        if (!cells || cells.length !== 2 || cells[0] === "Protected area")
+          continue;
         if (/^-+$/.test(cells[0]!.replaceAll(" ", ""))) continue;
         const key = cells[0]!.replace(/`/g, "").trim().toLowerCase();
         if (!seen.has(key)) {

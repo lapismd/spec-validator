@@ -16,10 +16,10 @@ The package does not run `svelte-check`, Vitest, Playwright, Visual Delta, publi
 
 ## Public surface coverage
 
-| Surface | Public boundary | Requirement |
-| --- | --- | --- |
-| Authority order | Governance | SV-GOV-001 |
-| Discovery cache | QMD | SV-QMD-001 |
+| Surface         | Public boundary | Requirement |
+| --------------- | --------------- | ----------- |
+| Authority order | Governance      | SV-GOV-001  |
+| Discovery cache | QMD             | SV-QMD-001  |
 
 ## SV-GOV-001 — Canonical specification
 

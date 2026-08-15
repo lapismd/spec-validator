@@ -9,7 +9,8 @@ import {
 
 test("classifies a Node ABI mismatch", () => {
   const result = {
-    stderr: "The module was compiled against a different Node.js version using NODE_MODULE_VERSION 127",
+    stderr:
+      "The module was compiled against a different Node.js version using NODE_MODULE_VERSION 127",
   };
   assert.equal(looksLikeAbiMismatch(result), true);
   assert.equal(looksLikeMissingNativeBinding(result), false);
@@ -18,13 +19,14 @@ test("classifies a Node ABI mismatch", () => {
 
 test("classifies a missing better-sqlite3 binding", () => {
   const result = {
-    stderr: "Error: Could not locate the bindings file. Tried:\n → /tmp/better_sqlite3.node",
+    stderr:
+      "Error: Could not locate the bindings file. Tried:\n → /tmp/better_sqlite3.node",
   };
   assert.equal(looksLikeMissingNativeBinding(result), true);
   assert.equal(looksLikeAbiMismatch(result), false);
   assert.match(
     nativeModuleAdvice(result) ?? "",
-    /approve better-sqlite3 and node-llama-cpp in pnpm.onlyBuiltDependencies/,
+    /allow better-sqlite3 and node-llama-cpp builds in pnpm-workspace.yaml/,
   );
 });
 

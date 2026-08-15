@@ -4,22 +4,22 @@
 
 ## Public surface coverage
 
-| Surface | Public boundary | Requirement |
-| --- | --- | --- |
-| Init scaffolds | Doctor and init | SV-DOC-001 |
-| Doctor report | Doctor and init | SV-DOC-002 |
-| Doctor fix safety | Doctor and init | SV-DOC-003 |
+| Surface           | Public boundary | Requirement |
+| ----------------- | --------------- | ----------- |
+| Init scaffolds    | Doctor and init | SV-DOC-001  |
+| Doctor report     | Doctor and init | SV-DOC-002  |
+| Doctor fix safety | Doctor and init | SV-DOC-003  |
 
 ## SV-DOC-001 — Init scaffolds
 
-**Requirement.** `init` MUST write a preset config and missing book or ignore scaffolding without clobbering unrelated consumer files unless `--force` is set.
+**Requirement.** `init` MUST write a neutral-profile config and missing book or ignore scaffolding without clobbering unrelated consumer files unless `--force` is set.
 
 ### Acceptance details
 
-- `init` MUST detect an existing `spec/src` and `package.json` name when choosing a preset.
+- `init` MUST inspect existing requirement IDs and document structure when choosing a neutral heading or table profile.
 - `init` MUST merge `spec:*` script aliases and MUST NOT remove unrelated scripts.
 - `--skill` MUST install only the global Agents skill.
-- `--force` MUST be required before replacing an existing config file.
+- `--force` MUST be required before replacing an existing config and MUST replace its format rather than create a competing file.
 
 ## SV-DOC-002 — Doctor report
 

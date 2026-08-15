@@ -24,7 +24,9 @@ export function validate(context: ValidationContext) {
     );
   } else {
     const config = readFileSync(configPath, "utf8");
-    if (!new RegExp(`^\\s*src\\s*=\\s*"${options.src}"\\s*$`, "m").test(config)) {
+    if (
+      !new RegExp(`^\\s*src\\s*=\\s*"${options.src}"\\s*$`, "m").test(config)
+    ) {
       findings.push(
         diagnostic({
           code: "SPEC-BOOK-CONFIG",
@@ -35,9 +37,10 @@ export function validate(context: ValidationContext) {
       );
     }
     if (
-      !new RegExp(`^\\s*build-dir\\s*=\\s*"${options.buildDir}"\\s*$`, "m").test(
-        config,
-      )
+      !new RegExp(
+        `^\\s*build-dir\\s*=\\s*"${options.buildDir}"\\s*$`,
+        "m",
+      ).test(config)
     ) {
       findings.push(
         diagnostic({
@@ -68,7 +71,8 @@ export function validate(context: ValidationContext) {
           code: "SPEC-BOOK-TRACKED",
           rule: ignoreRule,
           file: tracked,
-          message: "generated mdBook output must remain untracked; untrack the path",
+          message:
+            "generated mdBook output must remain untracked; untrack the path",
         }),
       );
     }

@@ -1,13 +1,17 @@
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { loadResolvedConfig } from "../config.js";
+import { loadResolvedConfig, resolveDiagnosticRule } from "../config.js";
 import { createValidationContext } from "../context.js";
 import { compareDiagnostics, diagnostic } from "../diagnostics.js";
 import type { Reporter } from "../reporter.js";
 import type { Diagnostic, ResolvedConfig, Validator } from "../types.js";
-import { enabledValidators } from "../validators/index.js";
-import { readList } from "../argv.js";
+import {
+  assertKnownValidatorNames,
+  BUILTIN_VALIDATOR_NAMES,
+  enabledValidators,
+} from "../validators/index.js";
+import { assertCommandArgs, readList, UsageError } from "../argv.js";
 
 export async function loadPlugins(
   repoRoot: string,
@@ -38,24 +42,45 @@ export async function runValidation(
   findings: Diagnostic[];
   stats: { validators: number; chapters: number; requirements: number };
 }> {
+  assertCommandArgs(argv, { value: ["--only", "--skip"] });
   const config = await loadResolvedConfig(repoRoot);
   const only = readList(argv, "--only");
   const skip = readList(argv, "--skip");
-  const validators = [
-    ...enabledValidators(config, { only, skip, exclude: ["specFirst"] }),
-    ...(only ? [] : await loadPlugins(repoRoot, config)),
+  const plugins = await loadPlugins(repoRoot, config);
+  const available = [
+    ...BUILTIN_VALIDATOR_NAMES,
+    ...plugins.map((plugin) => plugin.name),
   ];
+  assertKnownValidatorNames(only, available);
+  assertKnownValidatorNames(skip, available);
+  const builtins = enabledValidators(config, {
+    only,
+    skip,
+    exclude: ["specFirst"],
+  });
+  const selectedPlugins = plugins.filter((plugin) => {
+    if (only?.length && !only.includes(plugin.name)) return false;
+    return !skip?.includes(plugin.name);
+  });
+  const validators = [...builtins, ...selectedPlugins];
   const context = createValidationContext({ repoRoot, config });
-  const findings = validators
-    .flatMap((validator) => validator.validate(context))
-    .sort(compareDiagnostics);
+  const findings = [
+    ...builtins.flatMap((validator) =>
+      validator.validate(context).map((finding) => ({
+        ...finding,
+        rule: resolveDiagnosticRule(config, validator.name, finding.code),
+      })),
+    ),
+    ...selectedPlugins.flatMap((validator) => validator.validate(context)),
+  ].sort(compareDiagnostics);
   return {
     ok: findings.length === 0,
     findings,
     stats: {
       validators: validators.length,
-      chapters: context.model.files.filter((file) => file.chapterPath !== "SUMMARY.md")
-        .length,
+      chapters: context.model.files.filter(
+        (file) => file.chapterPath !== "SUMMARY.md",
+      ).length,
       requirements: context.model.definitions.length,
     },
   };
@@ -77,9 +102,10 @@ export async function validateCommand(
     });
     return result.ok ? 0 : 1;
   } catch (error) {
+    if (error instanceof UsageError) throw error;
     const finding = diagnostic({
       code: "SPEC-INTERNAL",
-      rule: "SV-GOV-003",
+      rule: "SPEC-CONFIG",
       file: "spec-validator",
       message: error instanceof Error ? error.message : String(error),
     });

@@ -25,7 +25,8 @@ function discoverCatalogTitles(repoRoot: string, roots: string[]): string[] {
   const titles: string[] = [];
   for (const root of roots) {
     for (const absolutePath of sourceFiles(path.join(repoRoot, root))) {
-      if (relativePath(repoRoot, absolutePath).startsWith("src/spec/")) continue;
+      if (relativePath(repoRoot, absolutePath).startsWith("src/spec/"))
+        continue;
       const source = readFileSync(absolutePath, "utf8");
       const match =
         /defineMeta(?:<[^>]+>)?\s*\(\s*\{[\s\S]*?\btitle\s*:\s*["'`]([^"'`]+)["'`]/.exec(
@@ -38,7 +39,11 @@ function discoverCatalogTitles(repoRoot: string, roots: string[]): string[] {
 }
 
 function duplicates(values: string[]): string[] {
-  return [...new Set(values.filter((value, index) => values.indexOf(value) !== index))];
+  return [
+    ...new Set(
+      values.filter((value, index) => values.indexOf(value) !== index),
+    ),
+  ];
 }
 
 export function validate(context: ValidationContext) {
@@ -65,7 +70,7 @@ export function validate(context: ValidationContext) {
     readFileSync(path.join(context.model.repoRoot, "package.json"), "utf8"),
   ) as { exports?: Record<string, unknown> };
   const exports = Object.keys(packageJson.exports ?? {}).sort();
-  const catalog = discoverCatalogTitles(context.model.repoRoot, ["src"]);
+  const catalog = discoverCatalogTitles(context.model.repoRoot, options.roots);
   const findings: Diagnostic[] = [];
 
   const validateMapping = (
@@ -121,6 +126,21 @@ export function validate(context: ValidationContext) {
             message: `${kind} mapping references an unknown requirement`,
           }),
         );
+      }
+      if (options.requireCoverage) {
+        const coverage =
+          context.model.coverageById.get(mapping.requirement) ?? [];
+        if (coverage.length !== 1) {
+          findings.push(
+            diagnostic({
+              code: "SPEC-SURFACE-COVERAGE",
+              rule,
+              file: mapPath,
+              subject: mapping.requirement,
+              message: `mapped ${kind} requirement has ${coverage.length} public-surface coverage rows; add exactly one`,
+            }),
+          );
+        }
       }
     }
   };

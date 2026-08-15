@@ -13,7 +13,10 @@ import type {
 
 export const NORMATIVE_PATTERN = /\b(?:MUST|MUST NOT|SHOULD|SHOULD NOT|MAY)\b/;
 
-export function groupBy<T>(items: T[], key: (item: T) => string): Map<string, T[]> {
+export function groupBy<T>(
+  items: T[],
+  key: (item: T) => string,
+): Map<string, T[]> {
   const groups = new Map<string, T[]>();
   for (const item of items) {
     const id = key(item);
@@ -129,11 +132,29 @@ export function localMarkdownTargets(source: string): string[] {
   return targets;
 }
 
-function nextHeading(lines: string[], start: number, levelPattern: RegExp): number {
+function nextHeading(
+  lines: string[],
+  start: number,
+  levelPattern: RegExp,
+): number {
   for (let index = start + 1; index < lines.length; index += 1) {
     if (levelPattern.test(lines[index]!)) return index;
   }
   return lines.length;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function headingPattern(config: ResolvedConfig): RegExp {
+  const [beforeId, afterId = ""] = config.headingTemplate.split("<ID>");
+  const [beforeSurface, afterSurface = ""] = afterId.split("<surface>");
+  const id = config.idPattern.source.replace(/^\^|\$$/g, "");
+  const surface = afterId.includes("<surface>") ? "(.+)" : "";
+  return new RegExp(
+    `^${escapeRegExp(beforeId!)}(${id})${escapeRegExp(beforeSurface!)}${surface}${escapeRegExp(afterSurface!)}\\s*$`,
+  );
 }
 
 function parseHeadingRequirements(
@@ -145,11 +166,11 @@ function parseHeadingRequirements(
   const malformed: Array<{ line: number; reason: string }> = [];
   const acceptanceSections: AcceptanceSection[] = [];
   const coverage: CoverageRow[] = [];
-  const heading = new RegExp(
-    `^##\\s+(${config.idPattern.source.slice(1, -1)})\\s+—\\s+(.+)\\s*$`,
-  );
+  const heading = headingPattern(config);
   const prefix = config.idPattern.source.match(/^\^([A-Z]+)/)?.[1] ?? "";
-  const headingStart = prefix ? new RegExp(`^##\\s+${prefix}-`) : /^##\s+[A-Z]+-/;
+  const headingStart = prefix
+    ? new RegExp(`^##\\s+${prefix}-`)
+    : /^##\s+[A-Z]+-/;
 
   for (let index = 0; index < lines.length; index += 1) {
     if (headingStart.test(lines[index]!)) {
@@ -157,7 +178,7 @@ function parseHeadingRequirements(
       if (!match) {
         malformed.push({
           line: index + 1,
-          reason: `requirement heading must be “## <ID> — <surface>” matching ${config.idPattern}`,
+          reason: `requirement heading must match “${config.headingTemplate}” and ${config.idPattern}`,
         });
         continue;
       }
@@ -169,7 +190,10 @@ function parseHeadingRequirements(
       const statement =
         statementLine < 0
           ? ""
-          : body[statementLine]!.replace(/^\*\*Requirement\.\*\*\s+/, "").trim();
+          : body[statementLine]!.replace(
+              /^\*\*Requirement\.\*\*\s+/,
+              "",
+            ).trim();
       const acceptanceHeading = body.findIndex((line) =>
         /^###\s+Acceptance details\s*$/.test(line),
       );
@@ -186,7 +210,11 @@ function parseHeadingRequirements(
         .filter((entry) => /^-\s+/.test(entry.line))
         .map((entry) => {
           const text = entry.line.replace(/^-\s+/, "").trim();
-          return { statement: text, line: entry.lineNumber, ...proseMetrics(text) };
+          return {
+            statement: text,
+            line: entry.lineNumber,
+            ...proseMetrics(text),
+          };
         });
       definitions.push({
         id: match[1]!,
@@ -275,7 +303,11 @@ function parseTableRequirements(
       .filter((entry) => /^-\s+/.test(entry.line))
       .map((entry) => {
         const text = entry.line.replace(/^-\s+/, "").trim();
-        return { statement: text, line: entry.lineNumber, ...proseMetrics(text) };
+        return {
+          statement: text,
+          line: entry.lineNumber,
+          ...proseMetrics(text),
+        };
       });
     acceptanceSections.push({
       id: match[1]!,
@@ -313,9 +345,13 @@ export function createSpecModel(
   const canonicalFiles = files.filter(
     (file) => !["SUMMARY.md", "verification.md"].includes(file.chapterPath),
   );
-  const parsed = canonicalFiles.map((file) => parseRequirementFile(file, config));
+  const parsed = canonicalFiles.map((file) =>
+    parseRequirementFile(file, config),
+  );
   const definitions = parsed.flatMap((entry) => entry.definitions);
-  const acceptanceSections = parsed.flatMap((entry) => entry.acceptanceSections);
+  const acceptanceSections = parsed.flatMap(
+    (entry) => entry.acceptanceSections,
+  );
   const coverage = parsed.flatMap((entry) => entry.coverage);
   return {
     repoRoot,

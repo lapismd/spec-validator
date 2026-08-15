@@ -47,7 +47,8 @@ export function readFlag(argv: string[], name: string): string | undefined {
   const index = argv.indexOf(name);
   if (index < 0) return undefined;
   const value = argv[index + 1];
-  if (!value || value.startsWith("-")) throw new UsageError(`${name} requires a value`);
+  if (!value || value.startsWith("-"))
+    throw new UsageError(`${name} requires a value`);
   return value;
 }
 
@@ -57,7 +58,38 @@ export function hasFlag(argv: string[], name: string): boolean {
 
 export function readList(argv: string[], name: string): string[] | undefined {
   const value = readFlag(argv, name);
-  return value ? value.split(",").map((item) => item.trim()).filter(Boolean) : undefined;
+  return value
+    ? value
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean)
+    : undefined;
+}
+
+export function assertCommandArgs(
+  argv: string[],
+  {
+    boolean = [],
+    value = [],
+    positionals = false,
+  }: { boolean?: string[]; value?: string[]; positionals?: boolean } = {},
+): void {
+  const booleanSet = new Set(boolean);
+  const valueSet = new Set(value);
+  for (let index = 0; index < argv.length; index += 1) {
+    const argument = argv[index]!;
+    if (booleanSet.has(argument)) continue;
+    if (valueSet.has(argument)) {
+      const next = argv[index + 1];
+      if (!next || next.startsWith("-")) {
+        throw new UsageError(`${argument} requires a value`);
+      }
+      index += 1;
+      continue;
+    }
+    if (!argument.startsWith("-") && positionals) continue;
+    throw new UsageError(`unknown argument: ${argument}`);
+  }
 }
 
 export function usage(): string {

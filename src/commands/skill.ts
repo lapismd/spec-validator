@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { UsageError } from "../argv.js";
 import type { Reporter } from "../reporter.js";
 
 export function skillSourcePath(): string {
@@ -32,10 +33,8 @@ export function skillCommand(
   argv: string[],
   reporter: Reporter,
 ): number {
-  const [subcommand] = argv;
-  if (subcommand && subcommand !== "install") {
-    reporter.writeError("Usage: spec-validator skill install");
-    return 2;
+  if (argv.length !== 1 || argv[0] !== "install") {
+    throw new UsageError("Usage: spec-validator skill install");
   }
   const destination = installSkill();
   reporter.writeReport({

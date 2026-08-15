@@ -18,7 +18,10 @@ export function diagnostic({
   return { code, rule, file, line, subject, message };
 }
 
-export function compareDiagnostics(left: Diagnostic, right: Diagnostic): number {
+export function compareDiagnostics(
+  left: Diagnostic,
+  right: Diagnostic,
+): number {
   return (
     left.file.localeCompare(right.file) ||
     left.line - right.line ||

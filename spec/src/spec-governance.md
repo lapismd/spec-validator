@@ -4,27 +4,27 @@ Specification changes precede or accompany protected implementation. Updating an
 
 ## Public surface coverage
 
-| Surface | Public boundary | Requirement |
-| --- | --- | --- |
-| Verification matrix | Governance | SV-GOV-002 |
-| Diagnostic contract | Governance | SV-GOV-003 |
-| Spec-first gate | Governance | SV-GOV-004 |
-| Generated artifacts | Governance | SV-GOV-005 |
-| Agent authority | Governance | SV-GOV-006 |
+| Surface             | Public boundary | Requirement |
+| ------------------- | --------------- | ----------- |
+| Verification matrix | Governance      | SV-GOV-002  |
+| Diagnostic contract | Governance      | SV-GOV-003  |
+| Spec-first gate     | Governance      | SV-GOV-004  |
+| Generated artifacts | Governance      | SV-GOV-005  |
+| Agent authority     | Governance      | SV-GOV-006  |
 
 ## Change map
 
-| Protected area | Owning canonical chapter |
-| --- | --- |
-| CLI entry, argv, reporter, and color | `cli.md` |
-| Config schema, loader, and presets | `configuration.md` |
-| Built-in validators and plugin loading | `validators.md` |
-| Spec model and tracked-file discovery | `architecture.md` |
-| Doctor, init, and `--fix` | `doctor-and-init.md` |
-| QMD search and index wrappers | `search-and-qmd.md` |
-| Skill payload and install command | `skill-and-agents.md` |
-| Specification chapters, book, QMD config, and agent guide | `spec-governance.md` |
-| Package manifests and build scripts | `architecture.md` |
+| Protected area                                            | Owning canonical chapter |
+| --------------------------------------------------------- | ------------------------ |
+| CLI entry, argv, reporter, and color                      | `cli.md`                 |
+| Config schema, loader, and neutral profiles               | `configuration.md`       |
+| Built-in validators and plugin loading                    | `validators.md`          |
+| Spec model and tracked-file discovery                     | `architecture.md`        |
+| Doctor, init, and `--fix`                                 | `doctor-and-init.md`     |
+| QMD search and index wrappers                             | `search-and-qmd.md`      |
+| Skill payload and install command                         | `skill-and-agents.md`    |
+| Specification chapters, book, QMD config, and agent guide | `spec-governance.md`     |
+| Package manifests and build scripts                       | `architecture.md`        |
 
 ## SV-GOV-002 — Verification matrix
 

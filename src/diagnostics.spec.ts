@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { compareDiagnostics, diagnostic, formatDiagnostic } from "./diagnostics.js";
+import {
+  compareDiagnostics,
+  diagnostic,
+  formatDiagnostic,
+} from "./diagnostics.js";
 
 test("formatDiagnostic includes optional subject", () => {
   const finding = diagnostic({

@@ -43,7 +43,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "build:node": "tsc -p tsconfig.node-build.json && node ./scripts/prepare-cli-bin.mjs",
+    "build:node": "node ./scripts/clean-node-output.mjs && tsc -p tsconfig.node-build.json && node ./scripts/prepare-cli-bin.mjs",
     "prepare": "pnpm build:node",
     "prepack": "pnpm build:node",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.node-build.json --noEmit",
@@ -53,7 +53,7 @@
     "spec:build": "node ./dist/cli.js build",
     "spec:serve": "node ./dist/cli.js serve",
     "spec:first": "node ./dist/cli.js first",
-    "spec:check": "node ./dist/cli.js check",
+    "spec:check": "pnpm build:node && node ./dist/cli.js check",
     "spec:index": "node ./dist/cli.js index",
     "spec:search": "node ./dist/cli.js search",
     "spec:lint": "node ./dist/cli.js validate --only markdownlint",
@@ -79,12 +79,5 @@
     "markdownlint-cli2": "^0.22.1",
     "prettier": "^3.6.2",
     "tsx": "^4.20.5"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "better-sqlite3",
-      "esbuild",
-      "node-llama-cpp"
-    ]
   }
 }

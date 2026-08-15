@@ -1,16 +1,19 @@
 import { loadResolvedConfig } from "../config.js";
+import { assertCommandArgs } from "../argv.js";
 import type { Reporter } from "../reporter.js";
 import { BUILTIN_VALIDATOR_NAMES } from "../validators/index.js";
 
 export async function listCommand(
   repoRoot: string,
-  _argv: string[],
+  argv: string[],
   reporter: Reporter,
 ): Promise<number> {
+  assertCommandArgs(argv);
   const config = await loadResolvedConfig(repoRoot);
   const validators = BUILTIN_VALIDATOR_NAMES.map((name) => ({
     name,
-    enabled: config.validators[name as keyof typeof config.validators] !== false,
+    enabled:
+      config.validators[name as keyof typeof config.validators] !== false,
     options: config.validators[name as keyof typeof config.validators],
   }));
   if (reporter.json) {
@@ -19,11 +22,12 @@ export async function listCommand(
       ok: true,
       exitCode: 0,
       stats: { validators: validators.filter((item) => item.enabled).length },
-      message: JSON.stringify({ preset: config.preset, validators }, null, 2),
+      validators,
+      message: config.name,
     });
     return 0;
   }
-  reporter.writeLine(`Preset: ${config.preset}`);
+  reporter.writeLine(`Configuration: ${config.name}`);
   for (const item of validators) {
     const state = item.enabled ? "on" : "off";
     reporter.writeLine(`  ${state.padEnd(3)} ${item.name}`);

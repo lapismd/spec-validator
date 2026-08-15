@@ -1,19 +1,241 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { hasFlag } from "../argv.js";
+import { assertCommandArgs, hasFlag } from "../argv.js";
 import { findConfigPath, loadResolvedConfig } from "../config.js";
 import type { Reporter } from "../reporter.js";
-import type { DoctorCheck } from "../types.js";
+import type { DoctorCheck, ResolvedConfig } from "../types.js";
 import { resolveQmdBinary } from "./search.js";
 import { globalSkillPath, installSkill } from "./skill.js";
 
+const SCRIPT_ALIASES: Record<string, string> = {
+  "spec:validate": "spec-validator validate",
+  "spec:check": "spec-validator check",
+  "spec:first": "spec-validator first",
+  "spec:build": "spec-validator build",
+  "spec:search": "spec-validator search",
+  "spec:index": "spec-validator index",
+};
+
 function which(command: string): boolean {
-  const result = process.env.PATH?.split(path.delimiter).some((directory) =>
-    existsSync(path.join(directory, command)),
+  return Boolean(
+    process.env.PATH?.split(path.delimiter).some((directory) =>
+      existsSync(path.join(directory, command)),
+    ),
   );
-  return Boolean(result);
+}
+
+function readJson(file: string): Record<string, unknown> {
+  return JSON.parse(readFileSync(file, "utf8")) as Record<string, unknown>;
+}
+
+function appendIgnore(repoRoot: string, line: string): boolean {
+  const file = path.join(repoRoot, ".gitignore");
+  const source = existsSync(file) ? readFileSync(file, "utf8") : "";
+  if (source.split(/\r?\n/).some((entry) => entry.trim() === line))
+    return false;
+  writeFileSync(
+    file,
+    `${source.endsWith("\n") || !source ? source : `${source}\n`}${line}\n`,
+  );
+  return true;
+}
+
+async function inspect(
+  repoRoot: string,
+  skillRequested: boolean,
+): Promise<{ checks: DoctorCheck[]; config?: ResolvedConfig }> {
+  const checks: DoctorCheck[] = [];
+  const configPath = findConfigPath(repoRoot);
+  if (!configPath) {
+    return {
+      checks: [
+        {
+          name: "config",
+          status: "fail",
+          message: "missing spec-validator config; run spec-validator init",
+        },
+      ],
+    };
+  }
+  let config: ResolvedConfig;
+  try {
+    config = await loadResolvedConfig(repoRoot);
+    checks.push({
+      name: "config",
+      status: "pass",
+      message: `loaded ${path.basename(configPath)} (${config.name})`,
+    });
+  } catch (error) {
+    return {
+      checks: [
+        {
+          name: "config",
+          status: "fail",
+          message: error instanceof Error ? error.message : String(error),
+        },
+      ],
+    };
+  }
+  for (const file of ["SUMMARY.md", "verification.md"]) {
+    const relative = `${config.specDir}/${file}`;
+    const present = existsSync(path.join(repoRoot, relative));
+    checks.push({
+      name: relative,
+      status: present ? "pass" : "fail",
+      message: present ? "present" : "missing canonical chapter",
+    });
+  }
+  if (config.validators.book) {
+    const present = existsSync(path.join(repoRoot, "spec/book.toml"));
+    checks.push({
+      name: "book.toml",
+      status: present ? "pass" : "fail",
+      message: present ? "present" : "missing spec/book.toml",
+      fixable: true,
+    });
+  }
+  const ignore = existsSync(path.join(repoRoot, ".gitignore"))
+    ? readFileSync(path.join(repoRoot, ".gitignore"), "utf8")
+    : "";
+  const bookIgnored = /^\/?spec\/book\/?\s*$/m.test(ignore);
+  checks.push({
+    name: "gitignore-book",
+    status: bookIgnored ? "pass" : "fail",
+    message: bookIgnored
+      ? "spec/book/ ignored"
+      : "add spec/book/ to .gitignore",
+    fixable: true,
+  });
+
+  if (config.validators.qmd) {
+    const qmdPath = path.join(repoRoot, config.validators.qmd.configPath);
+    const source = existsSync(qmdPath) ? readFileSync(qmdPath, "utf8") : "";
+    const valid =
+      source.includes(config.validators.qmd.collection) &&
+      /path:\s*spec\/src/.test(source) &&
+      /pattern:\s*["']?\*\*\/\*\.md/.test(source);
+    checks.push({
+      name: "qmd-config",
+      status: valid ? "pass" : "fail",
+      message: valid
+        ? "QMD collection indexes spec/src/**/*.md"
+        : "QMD config is missing or does not match the configured collection",
+      fixable: true,
+    });
+    const binary = resolveQmdBinary(repoRoot);
+    checks.push({
+      name: "qmd-binary",
+      status: existsSync(binary) ? "pass" : "warn",
+      message: existsSync(binary)
+        ? "local qmd binary present"
+        : "optional qmd binary missing; search will fall back to rg",
+    });
+    const workspacePath = path.join(repoRoot, "pnpm-workspace.yaml");
+    const workspace = existsSync(workspacePath)
+      ? readFileSync(workspacePath, "utf8")
+      : "";
+    const nativeAllowed = ["better-sqlite3", "node-llama-cpp"].every((name) =>
+      new RegExp(`^\\s+${name}:\\s+true\\s*$`, "m").test(workspace),
+    );
+    checks.push({
+      name: "pnpm-native-builds",
+      status: nativeAllowed ? "pass" : "fail",
+      message: nativeAllowed
+        ? "QMD native builds are allowed in pnpm-workspace.yaml"
+        : "allow better-sqlite3 and node-llama-cpp builds in pnpm-workspace.yaml",
+    });
+  }
+
+  checks.push({
+    name: "mdbook",
+    status: which("mdbook") ? "pass" : "warn",
+    message: which("mdbook") ? "mdbook is on PATH" : "mdbook is not on PATH",
+  });
+  const packagePath = path.join(repoRoot, "package.json");
+  if (existsSync(packagePath)) {
+    const scripts = (readJson(packagePath).scripts ?? {}) as Record<
+      string,
+      string
+    >;
+    const missing = Object.entries(SCRIPT_ALIASES).filter(
+      ([name, expected]) => scripts[name] !== expected,
+    );
+    checks.push({
+      name: "scripts",
+      status: missing.length ? "warn" : "pass",
+      message: missing.length
+        ? `script aliases differ: ${missing.map(([name]) => name).join(", ")}`
+        : "package.json has the exact spec-validator aliases",
+      fixable: true,
+    });
+  }
+  const skillPath = globalSkillPath();
+  const skillPresent = existsSync(skillPath);
+  checks.push({
+    name: "skill",
+    status: skillPresent ? "pass" : "warn",
+    message: skillPresent
+      ? `skill installed at ${skillPath}`
+      : `skill not installed at ${path.join(os.homedir(), ".agents/skills/spec-validator/SKILL.md")}${skillRequested ? "" : "; pass --skill to request installation"}`,
+    fixable: skillRequested,
+  });
+  return { checks, config };
+}
+
+function applyRepairs(
+  repoRoot: string,
+  config: ResolvedConfig,
+  skillRequested: boolean,
+): string[] {
+  const repairs: string[] = [];
+  const bookPath = path.join(repoRoot, "spec/book.toml");
+  if (config.validators.book && !existsSync(bookPath)) {
+    mkdirSync(path.dirname(bookPath), { recursive: true });
+    writeFileSync(
+      bookPath,
+      `[book]\ntitle = "Specification"\nlanguage = "en"\nsrc = "${config.validators.book.src}"\n\n[build]\nbuild-dir = "${config.validators.book.buildDir}"\n`,
+    );
+    repairs.push("spec/book.toml");
+  }
+  if (appendIgnore(repoRoot, "spec/book/")) repairs.push(".gitignore");
+  if (config.validators.qmd) {
+    const qmdPath = path.join(repoRoot, config.validators.qmd.configPath);
+    const source = existsSync(qmdPath) ? readFileSync(qmdPath, "utf8") : "";
+    const valid =
+      source.includes(config.validators.qmd.collection) &&
+      /path:\s*spec\/src/.test(source) &&
+      /pattern:\s*["']?\*\*\/\*\.md/.test(source);
+    if (!valid) {
+      mkdirSync(path.dirname(qmdPath), { recursive: true });
+      writeFileSync(
+        qmdPath,
+        `collections:\n  ${config.validators.qmd.collection}:\n    path: spec/src\n    pattern: "**/*.md"\n`,
+      );
+      repairs.push(config.validators.qmd.configPath);
+    }
+    if (appendIgnore(repoRoot, ".qmd/index.sqlite*"))
+      repairs.push(".gitignore");
+  }
+  const packagePath = path.join(repoRoot, "package.json");
+  if (existsSync(packagePath)) {
+    const manifest = readJson(packagePath) as {
+      scripts?: Record<string, string>;
+    };
+    const currentScripts = manifest.scripts ?? {};
+    const needsRepair = Object.entries(SCRIPT_ALIASES).some(
+      ([name, script]) => currentScripts[name] !== script,
+    );
+    if (needsRepair) {
+      manifest.scripts = { ...currentScripts, ...SCRIPT_ALIASES };
+      writeFileSync(packagePath, `${JSON.stringify(manifest, null, 2)}\n`);
+      repairs.push("package.json");
+    }
+  }
+  if (skillRequested && !existsSync(globalSkillPath()))
+    repairs.push(installSkill());
+  return [...new Set(repairs)];
 }
 
 export async function doctorCommand(
@@ -21,176 +243,33 @@ export async function doctorCommand(
   argv: string[],
   reporter: Reporter,
 ): Promise<number> {
+  assertCommandArgs(argv, {
+    boolean: ["--fix", "--strict", "--skill"],
+  });
   const fix = hasFlag(argv, "--fix");
   const strict = hasFlag(argv, "--strict");
-  const checks: DoctorCheck[] = [];
-  const repairs: string[] = [];
-
-  const configPath = findConfigPath(repoRoot);
-  if (!configPath) {
-    checks.push({
-      name: "config",
-      status: "fail",
-      message: "missing spec-validator.config.ts; run spec-validator init",
-      fixable: false,
-    });
-  } else {
-    try {
-      const config = await loadResolvedConfig(repoRoot);
-      checks.push({
-        name: "config",
-        status: "pass",
-        message: `loaded ${path.basename(configPath)} (preset ${config.preset})`,
-      });
-
-      const specDir = path.join(repoRoot, config.specDir);
-      for (const file of ["SUMMARY.md", "verification.md"]) {
-        const relative = `${config.specDir}/${file}`;
-        checks.push({
-          name: relative,
-          status: existsSync(path.join(specDir, file)) ? "pass" : "fail",
-          message: existsSync(path.join(specDir, file))
-            ? "present"
-            : "missing canonical chapter",
-        });
-      }
-      const bookPath = path.join(repoRoot, "spec/book.toml");
-      if (config.validators.book) {
-        checks.push({
-          name: "book.toml",
-          status: existsSync(bookPath) ? "pass" : "fail",
-          message: existsSync(bookPath) ? "present" : "missing spec/book.toml",
-          fixable: true,
-        });
-        if (fix && !existsSync(bookPath)) {
-          writeFileSync(
-            bookPath,
-            `[book]\ntitle = "Specification"\nlanguage = "en"\nsrc = "src"\n\n[build]\nbuild-dir = "book"\n`,
-          );
-          repairs.push("spec/book.toml");
-        }
-      }
-
-      const ignorePath = path.join(repoRoot, ".gitignore");
-      const ignore = existsSync(ignorePath) ? readFileSync(ignorePath, "utf8") : "";
-      const hasBookIgnore = /^\/?spec\/book\/?\s*$/m.test(ignore);
-      checks.push({
-        name: "gitignore-book",
-        status: hasBookIgnore ? "pass" : "fail",
-        message: hasBookIgnore ? "spec/book/ ignored" : "add spec/book/ to .gitignore",
-        fixable: true,
-      });
-      if (fix && !hasBookIgnore) {
-        writeFileSync(
-          ignorePath,
-          `${ignore.endsWith("\n") || !ignore ? ignore : `${ignore}\n`}spec/book/\n`,
-        );
-        repairs.push(".gitignore");
-      }
-
-      if (config.validators.qmd) {
-        const qmdPath = path.join(repoRoot, config.validators.qmd.configPath);
-        const qmdPresent = existsSync(qmdPath);
-        checks.push({
-          name: "qmd-config",
-          status: qmdPresent ? "pass" : "fail",
-          message: qmdPresent ? "QMD config present" : "missing .qmd/index.yml",
-          fixable: true,
-        });
-        if (fix && !qmdPresent) {
-          writeFileSync(
-            qmdPath,
-            `collections:\n  ${config.validators.qmd.collection}:\n    path: spec/src\n    pattern: "**/*.md"\n`,
-          );
-          repairs.push(config.validators.qmd.configPath);
-        }
-        const binary = resolveQmdBinary(repoRoot);
-        checks.push({
-          name: "qmd-binary",
-          status: existsSync(binary) ? "pass" : "warn",
-          message: existsSync(binary)
-            ? "local qmd binary present"
-            : "optional qmd binary missing; search will fall back to rg",
-        });
-      }
-
-      checks.push({
-        name: "mdbook",
-        status: which("mdbook") ? "pass" : "warn",
-        message: which("mdbook") ? "mdbook is on PATH" : "mdbook is not on PATH",
-      });
-
-      const packagePath = path.join(repoRoot, "package.json");
-      if (existsSync(packagePath)) {
-        const scripts = (
-          JSON.parse(readFileSync(packagePath, "utf8")) as {
-            scripts?: Record<string, string>;
-          }
-        ).scripts ?? {};
-        const wired = Object.values(scripts).some(
-          (script) =>
-            script.includes("spec-validator") || script.includes("dist/cli.js"),
-        );
-        checks.push({
-          name: "scripts",
-          status: wired ? "pass" : "warn",
-          message: wired
-            ? "package.json scripts call spec-validator"
-            : "package.json scripts do not yet call spec-validator",
-          fixable: true,
-        });
-        if (fix && !wired) {
-          const manifest = JSON.parse(readFileSync(packagePath, "utf8")) as {
-            scripts?: Record<string, string>;
-          };
-          manifest.scripts = {
-            ...manifest.scripts,
-            "spec:validate": "spec-validator validate",
-            "spec:check": "spec-validator check",
-          };
-          writeFileSync(packagePath, `${JSON.stringify(manifest, null, 2)}\n`);
-          repairs.push("package.json");
-        }
-      }
-
-      const skillPath = globalSkillPath();
-      const skillPresent = existsSync(skillPath);
-      checks.push({
-        name: "skill",
-        status: skillPresent ? "pass" : "warn",
-        message: skillPresent
-          ? `skill installed at ${skillPath}`
-          : `skill not installed at ${path.join(os.homedir(), ".agents/skills/spec-validator/SKILL.md")}`,
-        fixable: true,
-      });
-      if (fix && !skillPresent) {
-        repairs.push(installSkill());
-      }
-    } catch (error) {
-      checks.push({
-        name: "config",
-        status: "fail",
-        message: error instanceof Error ? error.message : String(error),
-      });
-    }
+  const skillRequested = hasFlag(argv, "--skill");
+  let inspection = await inspect(repoRoot, skillRequested);
+  let repairs: string[] = [];
+  if (fix && inspection.config) {
+    repairs = applyRepairs(repoRoot, inspection.config, skillRequested);
+    inspection = await inspect(repoRoot, skillRequested);
   }
-
-  if (fix && repairs.length) {
-    checks.push({
+  if (repairs.length) {
+    inspection.checks.push({
       name: "repairs",
       status: "pass",
       message: `applied ${repairs.join(", ")}`,
     });
   }
-
-  const failed = checks.some((check) => check.status === "fail");
-  const warned = checks.some((check) => check.status === "warn");
+  const failed = inspection.checks.some((check) => check.status === "fail");
+  const warned = inspection.checks.some((check) => check.status === "warn");
   const ok = !failed && (!strict || !warned);
   reporter.writeReport({
     version: 1,
     ok,
     exitCode: ok ? 0 : 1,
-    checks,
+    checks: inspection.checks,
   });
   return ok ? 0 : 1;
 }
