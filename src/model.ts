@@ -318,7 +318,13 @@ function parseTableRequirements(
   const acceptanceHeading = new RegExp(
     `^###\\s+(${config.idPattern.source.slice(1, -1)}) acceptance details\\s*$`,
   );
+  let fenced = false;
   for (let index = 0; index < lines.length; index += 1) {
+    if (/^\s*```/.test(lines[index]!)) {
+      fenced = !fenced;
+      continue;
+    }
+    if (fenced) continue;
     const match = acceptanceHeading.exec(lines[index]!);
     if (!match) continue;
     const end = nextHeading(lines, index, /^#{1,3}\s+/);

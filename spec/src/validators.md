@@ -38,7 +38,7 @@ Built-in validators are named modules. Each can be enabled, configured, or repla
 
 ### Acceptance details
 
-- Verification MUST support configured sections and headers, single or grouped IDs, reference-only traceability, and exact or prefix statuses; table governance MUST support strict configured sections and configurable declared acceptance details.
+- Verification MUST support configured sections and headers, single or grouped IDs, reference-only traceability, and exact or prefix statuses; table governance MUST support strict configured sections and configurable declared acceptance details outside fenced examples.
 - Storybook catalog validation MUST support local helpers, raw examples, Svelte module scripts, package story discovery, and configurable boundary and language rules.
 - Storybook mirrors MUST support target, title, metadata-only content, order, and registry coverage checks when enabled.
 - Spec-first MUST support ordered path mappings, capture maps, ignored paths, conditional changed-line protection, and mapped-chapter or any-canonical modes.

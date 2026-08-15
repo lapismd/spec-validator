@@ -108,3 +108,28 @@ test("declared table acceptance requires colocated details, an introduction, and
     2,
   );
 });
+
+test("table acceptance ignores fenced authoring examples", () => {
+  const findings = validateTable(
+    [
+      "# Requirements",
+      "",
+      "## Requirements",
+      "",
+      "| ID | Requirement |",
+      "| --- | --- |",
+      "| FIX-REQ-001 | It MUST work. |",
+      "",
+      "```markdown",
+      "### FIX-REQ-999 acceptance details",
+      "",
+      "The example shows:",
+      "",
+      "- First",
+      "- Second",
+      "- Third",
+      "```",
+    ].join("\n"),
+  );
+  assert.deepEqual(findings, []);
+});

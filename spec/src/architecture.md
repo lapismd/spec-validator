@@ -35,7 +35,7 @@ The package is a Node.js CLI with a loadable config, a validator registry, and a
 
 ## SV-ARCH-003 — Plugin contract
 
-**Requirement.** Every validator MUST receive a shared context with the spec model, tracked files, resolved config, and optional file reads, and MUST return structured diagnostics.
+**Requirement.** Every validator MUST receive a shared context with the spec model, tracked files, resolved config, and optional file reads, MUST exclude fenced authoring examples from canonical structures, and MUST return structured diagnostics.
 
 ### Acceptance details
 
