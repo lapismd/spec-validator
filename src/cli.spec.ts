@@ -1,5 +1,11 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -14,6 +20,30 @@ function run(args: string[], cwd = path.dirname(path.dirname(binary))) {
     encoding: "utf8",
   });
 }
+
+test("CLI runs when the bin entry is reached through a package symlink", () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), "spec-validator-bin-"));
+  try {
+    const linkedBinary = path.join(root, "spec-validator");
+    symlinkSync(binary, linkedBinary);
+    const result = spawnSync(
+      process.execPath,
+      [linkedBinary, "--help", "--json"],
+      { cwd: root, encoding: "utf8" },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout) as {
+      ok: boolean;
+      exitCode: number;
+    };
+    assert.deepEqual(
+      { ok: report.ok, exitCode: report.exitCode },
+      { ok: true, exitCode: 0 },
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 
 test("CLI rejects unknown flags and validators with one JSON envelope", () => {
   for (const args of [

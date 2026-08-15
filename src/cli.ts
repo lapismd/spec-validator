@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-import { pathToFileURL } from "node:url";
+import { realpathSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 import { parseGlobalArgv, usage, UsageError } from "./argv.js";
@@ -98,10 +99,19 @@ export async function runCli(
   }
 }
 
-if (
-  process.argv[1] &&
-  import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href
-) {
+function isCliEntrypoint(): boolean {
+  if (!process.argv[1]) return false;
+  try {
+    return (
+      realpathSync(path.resolve(process.argv[1])) ===
+      realpathSync(fileURLToPath(import.meta.url))
+    );
+  } catch {
+    return false;
+  }
+}
+
+if (isCliEntrypoint()) {
   runCli().then((code) => {
     process.exitCode = code;
   });

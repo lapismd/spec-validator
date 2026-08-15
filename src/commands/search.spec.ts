@@ -1,11 +1,27 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { UsageError } from "../argv.js";
+import { createReporter } from "../reporter.js";
 import {
   looksLikeAbiMismatch,
   looksLikeMissingNativeBinding,
   nativeModuleAdvice,
+  searchCommand,
 } from "./search.js";
+
+test("index rejects search-only arguments before loading configuration", async () => {
+  await assert.rejects(
+    () =>
+      searchCommand(
+        "/missing",
+        ["--limit", "2"],
+        createReporter({ color: "never", json: false }),
+        "index",
+      ),
+    UsageError,
+  );
+});
 
 test("classifies a Node ABI mismatch", () => {
   const result = {

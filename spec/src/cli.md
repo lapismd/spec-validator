@@ -12,7 +12,7 @@ The `spec-validator` binary is the supported entry point. Global output flags ap
 
 ## SV-CLI-001 — Command surface
 
-**Requirement.** The CLI MUST provide `validate`, `check`, `build`, `serve`, `first`, `search`, `index`, `list`, `init`, `doctor`, and `skill install` as first-class commands.
+**Requirement.** The CLI MUST provide `validate`, `check`, `build`, `serve`, `first`, `search`, `index`, `list`, `init`, `doctor`, and `skill install` as first-class commands, and its binary MUST run through package-manager symlinks.
 
 ### Acceptance details
 

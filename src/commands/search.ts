@@ -97,11 +97,16 @@ export async function searchCommand(
   reporter: Reporter,
   command: "search" | "index",
 ): Promise<number> {
-  assertCommandArgs(argv, {
-    boolean: ["--semantic"],
-    value: ["--limit", "-n"],
-    positionals: command === "search",
-  });
+  assertCommandArgs(
+    argv,
+    command === "search"
+      ? {
+          boolean: ["--semantic"],
+          value: ["--limit", "-n"],
+          positionals: true,
+        }
+      : { boolean: ["--semantic"] },
+  );
   const config = await loadResolvedConfig(repoRoot);
   const options = config.validators.qmd;
   if (options === false) {

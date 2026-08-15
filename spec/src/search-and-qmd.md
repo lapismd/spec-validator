@@ -11,7 +11,7 @@ QMD is a local discovery cache over canonical Markdown. It is not an authority a
 
 ## SV-QMD-001 — Discovery commands
 
-**Requirement.** `search` and `index` MUST refresh the tracked collection before querying, and semantic mode MUST embed before vector retrieval.
+**Requirement.** `search` and `index` MUST refresh the tracked collection before querying, semantic mode MUST embed before vector retrieval, and each command MUST reject options outside its schema.
 
 ### Acceptance details
 
