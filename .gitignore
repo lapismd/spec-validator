@@ -1,0 +1,13 @@
+node_modules/
+dist/
+spec/book/
+.qmd/index.sqlite*
+
+coverage/
+test-results/
+playwright-report/
+
+*.tgz
+*.tsbuildinfo
+*.log
+.DS_Store
