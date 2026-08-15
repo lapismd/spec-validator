@@ -114,6 +114,81 @@ function docsSourceObjects(root: ts.Node): ts.ObjectLiteralExpression[] {
   return sources;
 }
 
+interface TextSourceObject {
+  source: string;
+  start: number;
+}
+
+function objectEnd(source: string, start: number): number {
+  let depth = 0;
+  let quote: string | null = null;
+  let escaped = false;
+  let lineComment = false;
+  let blockComment = false;
+  for (let index = start; index < source.length; index += 1) {
+    const character = source[index]!;
+    const next = source[index + 1];
+    if (lineComment) {
+      if (character === "\n") lineComment = false;
+      continue;
+    }
+    if (blockComment) {
+      if (character === "*" && next === "/") {
+        blockComment = false;
+        index += 1;
+      }
+      continue;
+    }
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (character === "\\") escaped = true;
+      else if (character === quote) quote = null;
+      continue;
+    }
+    if (character === "/" && next === "/") {
+      lineComment = true;
+      index += 1;
+      continue;
+    }
+    if (character === "/" && next === "*") {
+      blockComment = true;
+      index += 1;
+      continue;
+    }
+    if (character === '"' || character === "'" || character === "`") {
+      quote = character;
+      continue;
+    }
+    if (character === "{") depth += 1;
+    if (character === "}") {
+      depth -= 1;
+      if (depth === 0) return index + 1;
+    }
+  }
+  return source.length;
+}
+
+function textPropertyObjects(
+  source: string,
+  propertyName: string,
+  offset = 0,
+): TextSourceObject[] {
+  const objects: TextSourceObject[] = [];
+  const pattern = new RegExp(`\\b${propertyName}\\s*:\\s*\\{`, "g");
+  for (const match of source.matchAll(pattern)) {
+    const brace = (match.index ?? 0) + match[0].lastIndexOf("{");
+    const end = objectEnd(source, brace);
+    objects.push({ start: offset + brace, source: source.slice(brace, end) });
+  }
+  return objects;
+}
+
+function svelteDocsSourceObjects(source: string): TextSourceObject[] {
+  return textPropertyObjects(source, "docs").flatMap((docs) =>
+    textPropertyObjects(docs.source, "source", docs.start),
+  );
+}
+
 function sourceFields(sourceObject: ts.ObjectLiteralExpression) {
   const code = objectProperty(sourceObject, "code");
   const language = objectProperty(sourceObject, "language");
@@ -366,6 +441,65 @@ function validateSourceObjects(
   }
 }
 
+function validateSvelteSourceObjects(
+  context: ValidationContext,
+  objects: TextSourceObject[],
+  source: string,
+  file: string,
+  findings: ReturnType<typeof diagnostic>[],
+) {
+  const options = context.config.validators.storybookCatalog;
+  if (options === false) return;
+  const forbidden = new RegExp(options.forbiddenSource);
+  for (const object of objects) {
+    const code = /\bcode\s*:/.test(object.source);
+    const language = /\blanguage\s*:\s*["']([^"']+)["']/.exec(object.source);
+    const type = /\btype\s*:\s*["']code["']/.test(object.source);
+    const line = source.slice(0, object.start).split(/\r?\n/).length;
+    if (!code || !language || !type) {
+      findings.push(
+        diagnostic({
+          code: "SPEC-STORY-SOURCE-FIELDS",
+          rule: context.config.ruleIds.storybookCatalog,
+          file,
+          line,
+          message: 'docs.source must define code, language, and type: "code"',
+        }),
+      );
+      continue;
+    }
+    const literalCode = /\bcode\s*:\s*(["'`])([\s\S]*?)\1/.exec(
+      object.source,
+    )?.[2];
+    if (
+      literalCode &&
+      exposesBoundary(literalCode, forbidden, options.packageName)
+    ) {
+      findings.push(
+        diagnostic({
+          code: "SPEC-STORY-SOURCE-BOUNDARY",
+          rule: context.config.ruleIds.storybookCatalog,
+          file,
+          line,
+          message:
+            "Show Code must not expose a story-only demo, harness, fixture, story surface, or args expression",
+        }),
+      );
+    }
+    if (options.plainTextLanguages.includes(language[1]!)) {
+      findings.push(
+        diagnostic({
+          code: "SPEC-STORY-SYNTAX-LANGUAGE",
+          rule: context.config.ruleIds.storybookCatalog,
+          file,
+          line,
+          message: `Storybook renders language "${language[1]}" without syntax tokens; use "tsx" for Svelte component markup`,
+        }),
+      );
+    }
+  }
+}
+
 function validateExampleSources(
   context: ValidationContext,
   directory: string,
@@ -494,6 +628,9 @@ export function validate(context: ValidationContext) {
 
     const relative = relativePath(context.model.repoRoot, absolutePath);
     const localSources = docsSourceObjects(sourceFile);
+    const svelteSources = absolutePath.endsWith(".svelte")
+      ? svelteDocsSourceObjects(source)
+      : [];
     const importedSources = calledImportedHelpers(sourceFile, imports).flatMap(
       (helper) => {
         const parsed = helperSources(helper, helperCache);
@@ -512,15 +649,26 @@ export function validate(context: ValidationContext) {
       },
     );
 
-    validateSourceObjects(
-      context,
-      localSources,
-      sourceFile,
-      relative,
-      findings,
-      lineOffset,
-    );
-    if (localSources.length || importedSources.length) continue;
+    if (absolutePath.endsWith(".svelte")) {
+      validateSvelteSourceObjects(
+        context,
+        svelteSources,
+        source,
+        relative,
+        findings,
+      );
+    } else {
+      validateSourceObjects(
+        context,
+        localSources,
+        sourceFile,
+        relative,
+        findings,
+        lineOffset,
+      );
+    }
+    if (localSources.length || svelteSources.length || importedSources.length)
+      continue;
     findings.push(
       diagnostic({
         code: "SPEC-STORY-SOURCE-MISSING",
