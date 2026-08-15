@@ -234,6 +234,7 @@ export function resolveConfig(user: UserConfig): ResolvedConfig {
       idMode: "single" as const,
       statuses: ["Implemented", "In progress", "Partial"],
       statusMatch: "exact" as const,
+      rowMultiplicity: "exactly-one" as const,
       rejectOrphans: true,
       requireEvidence: true,
     }),

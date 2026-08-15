@@ -47,6 +47,7 @@ export function singleIdVerification(
     idMode: "single",
     statuses: ["Implemented", "In progress", "Partial"],
     statusMatch: "exact",
+    rowMultiplicity: "exactly-one",
     rejectOrphans: true,
     requireEvidence: true,
     ...overrides,

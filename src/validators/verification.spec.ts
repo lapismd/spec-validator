@@ -65,3 +65,50 @@ test("verification supports a configured grouped-ID table and prefix statuses", 
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("verification can allow multiple evidence rows for one requirement", () => {
+  const root = mkdtempSync(
+    path.join(os.tmpdir(), "spec-validator-verification-many-"),
+  );
+  try {
+    mkdirSync(path.join(root, "spec/src"), { recursive: true });
+    writeFileSync(
+      path.join(root, "spec/src/requirements.md"),
+      "| ID | Requirement |\n| --- | --- |\n| FIX-REQ-001 | The engine MUST retain multiple evidence rows. |\n",
+    );
+    writeFileSync(
+      path.join(root, "spec/src/verification.md"),
+      [
+        "| Requirements | Evidence | Status |",
+        "| --- | --- | --- |",
+        "| FIX-REQ-001 | unit | Implemented |",
+        "| FIX-REQ-001 | integration | Implemented |",
+      ].join("\n"),
+    );
+    const config = resolveConfig({
+      idPattern: /^FIX-REQ-\d{3}$/,
+      requirementStyle: "table",
+      ruleIds: { verification: "FIX-REQ-001", internal: "FIX-REQ-001" },
+      validators: {
+        verification: {
+          headers: {
+            ids: ["Requirements"],
+            evidence: ["Evidence"],
+            status: ["Status"],
+          },
+          idMode: "grouped",
+          statuses: ["Implemented"],
+          rowMultiplicity: "at-least-one",
+        },
+      },
+    });
+    const context = createValidationContext({
+      repoRoot: root,
+      config,
+      trackedFiles: [],
+    });
+    assert.deepEqual(validate(context), []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

@@ -8,23 +8,20 @@ import type { ValidationContext } from "../types.js";
 
 export const name = "storybookMirrors";
 
-function summaryEntries(context: ValidationContext) {
+function summaryEntries(context: ValidationContext, includeAllLinks: boolean) {
   const summary = context.model.files.find(
     (file) => file.chapterPath === "SUMMARY.md",
   );
   if (!summary) return [];
   return summary.source.split(/\r?\n/).flatMap((line, index) => {
-    const match = /^\s*-\s+\[([^\]]+)]\(([^)#]+\.md)(?:#[^)]+)?\)\s*$/.exec(
-      line,
-    );
-    if (!match) return [];
-    return [
-      {
-        label: match[1]!.replaceAll(" / ", "/"),
-        chapterPath: toPosix(path.normalize(match[2]!)),
-        line: index + 1,
-      },
-    ];
+    const pattern = includeAllLinks
+      ? /\[([^\]]+)]\(([^)#]+\.md)(?:#[^)]+)?\)/g
+      : /^\s*-\s+\[([^\]]+)]\(([^)#]+\.md)(?:#[^)]+)?\)\s*$/g;
+    return [...line.matchAll(pattern)].map((match) => ({
+      label: match[1]!.replaceAll(" / ", "/"),
+      chapterPath: toPosix(path.normalize(match[2]!)),
+      line: index + 1,
+    }));
   });
 }
 
@@ -146,7 +143,7 @@ export function validate(context: ValidationContext) {
   if (options === false) return [];
   const rule = context.config.ruleIds.storybookMirrors;
   const findings: ReturnType<typeof diagnostic>[] = [];
-  const entries = summaryEntries(context);
+  const entries = summaryEntries(context, options.style === "stories-spec");
   const root = path.join(context.model.repoRoot, options.directory);
   const actual = collectMdx(root);
 

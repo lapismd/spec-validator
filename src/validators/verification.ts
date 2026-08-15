@@ -197,7 +197,10 @@ export function validate(context: ValidationContext) {
   const rowsById = groupBy(expanded, (row) => row.id);
   for (const definition of context.model.definitions) {
     const count = rowsById.get(definition.id)?.length ?? 0;
-    if (count !== 1) {
+    if (
+      count === 0 ||
+      (options.rowMultiplicity === "exactly-one" && count !== 1)
+    ) {
       findings.push(
         diagnostic({
           code: count === 0 ? "SPEC-VERIFY-UNMAPPED" : "SPEC-VERIFY-DUPLICATE",

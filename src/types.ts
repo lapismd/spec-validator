@@ -135,6 +135,7 @@ export interface VerificationOptions {
   idMode?: "single" | "grouped";
   statuses?: string[];
   statusMatch?: "exact" | "prefix";
+  rowMultiplicity?: "exactly-one" | "at-least-one";
   rejectOrphans?: boolean;
   requireEvidence?: boolean;
 }
