@@ -62,6 +62,7 @@ function flattenOrder(
     const label = element.text;
     const children = array.elements[index + 1];
     if (children && ts.isArrayLiteralExpression(children)) {
+      titles.push([...prefix, label].join("/"));
       titles.push(...flattenOrder(children, [...prefix, label]));
       index += 1;
     } else if (label !== "*") {
@@ -329,7 +330,7 @@ export function validate(context: ValidationContext) {
         title.startsWith(`${options.titlePrefix}/`),
       );
       if (
-        order[0] !== expectedOrder[0] ||
+        (order[0] !== options.titlePrefix && order[0] !== expectedOrder[0]) ||
         JSON.stringify(specificationOrder) !== JSON.stringify(expectedOrder)
       ) {
         findings.push(
