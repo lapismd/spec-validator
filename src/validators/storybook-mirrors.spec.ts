@@ -111,3 +111,67 @@ test("nested Storybook order preserves parent index pages under a specification-
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("nested Storybook order ignores structural groups without SUMMARY chapters", () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), "spec-validator-order-"));
+  try {
+    mkdirSync(path.join(root, "spec/src/shadcn"), { recursive: true });
+    mkdirSync(path.join(root, "stories/spec/shadcn"), { recursive: true });
+    mkdirSync(path.join(root, ".storybook"), { recursive: true });
+    writeFileSync(
+      path.join(root, "spec/src/SUMMARY.md"),
+      [
+        "# Summary",
+        "",
+        "- [Introduction](./index.md)",
+        "- [Shadcn / Layout](./shadcn/layout.md)",
+        "",
+      ].join("\n"),
+    );
+    writeFileSync(path.join(root, "spec/src/index.md"), "# Introduction\n");
+    writeFileSync(path.join(root, "spec/src/shadcn/layout.md"), "# Layout\n");
+    const mirror = (target, title) =>
+      `import { Markdown, Meta } from "@storybook/addon-docs/blocks";\nimport content from "${target}?raw";\n\n<Meta title="${title}" />\n\n<Markdown>{content}</Markdown>\n`;
+    writeFileSync(
+      path.join(root, "stories/spec/index.mdx"),
+      mirror("../../spec/src/index.md", "Specification/Introduction"),
+    );
+    writeFileSync(
+      path.join(root, "stories/spec/shadcn/layout.mdx"),
+      mirror(
+        "../../../spec/src/shadcn/layout.md",
+        "Specification/Shadcn/Layout",
+      ),
+    );
+    writeFileSync(
+      path.join(root, ".storybook/preview.ts"),
+      `export default { options: { storySort: { order: ["Specification", ["Introduction", "Shadcn", ["Layout"]], "*"] } } };`,
+    );
+    const config = resolveConfig({
+      ruleIds: {
+        storybookMirrors: "FIX-CAT-001",
+        internal: "FIX-GOV-001",
+      },
+      validators: {
+        storybookMirrors: {
+          style: "src-spec-mdx",
+          directory: "stories/spec",
+          titlePrefix: "Specification",
+          verifyTarget: true,
+          verifyTitle: true,
+          verifyContent: true,
+          previewPath: ".storybook/preview.ts",
+          verifyOrder: true,
+        },
+      },
+    });
+    const context = createValidationContext({
+      repoRoot: root,
+      config,
+      trackedFiles: [],
+    });
+    assert.deepEqual(validate(context), []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

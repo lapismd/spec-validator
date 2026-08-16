@@ -326,8 +326,9 @@ export function validate(context: ValidationContext) {
         }),
       );
     } else {
+      const expectedTitles = new Set(expectedOrder);
       const specificationOrder = order.filter((title) =>
-        title.startsWith(`${options.titlePrefix}/`),
+        expectedTitles.has(title),
       );
       if (
         (order[0] !== options.titlePrefix && order[0] !== expectedOrder[0]) ||
