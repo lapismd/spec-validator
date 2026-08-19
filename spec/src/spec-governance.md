@@ -73,7 +73,7 @@ Specification changes precede or accompany protected implementation. Updating an
 
 ## SV-GOV-006 — Agent authority
 
-**Requirement.** Tracked `AGENTS.md` MUST state the authority order, spec-first workflow, QMD discovery rule, and Jujutsu commit loop for this package.
+**Requirement.** Tracked `AGENTS.md` MUST state the authority order, spec-first workflow, QMD discovery rule, and a standing Jujutsu commit after each verified slice.
 
 ### Acceptance details
 
