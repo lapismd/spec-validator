@@ -3,6 +3,8 @@
 `@lapismd/workspace-tools` provides Deno-first source linking and task
 orchestration for separately versioned sibling repositories. It does not turn
 the sibling checkouts into one workspace or replace their own locks.
+The package manifest exposes both its library surface and `./cli` so sibling
+declarations can validate the bootstrap entry point before synchronization.
 
 ## Public surface coverage
 

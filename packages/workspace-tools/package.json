@@ -12,6 +12,7 @@
       "deno": "./src/mod.ts",
       "types": "./src/mod.ts",
       "default": "./src/mod.ts"
-    }
+    },
+    "./cli": "./src/cli.ts"
   }
 }
