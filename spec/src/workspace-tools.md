@@ -5,6 +5,9 @@ orchestration for separately versioned sibling repositories. It does not turn
 the sibling checkouts into one workspace or replace their own locks.
 The package manifest exposes both its library surface and `./cli` so sibling
 declarations can validate the bootstrap entry point before synchronization.
+Deno requires unscoped filesystem permission when creating symlinks, so the
+tool itself MUST enforce the declared workspace and `node_modules` boundaries
+before using that permission.
 
 ## Public surface coverage
 

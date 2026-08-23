@@ -11,7 +11,7 @@
     "install": "deno task version:check && deno install --frozen=false",
     "ci": "deno task version:check && deno ci",
     "workspace:check": "deno run --no-prompt --allow-read ./packages/workspace-tools/src/cli.ts links check",
-    "workspace:sync": "deno run --no-prompt --allow-read --allow-write=./node_modules ./packages/workspace-tools/src/cli.ts links sync",
+    "workspace:sync": "deno run --no-prompt --allow-read --allow-write ./packages/workspace-tools/src/cli.ts links sync",
     "workspace:run": "deno run --no-prompt --allow-read --allow-run --allow-env --allow-sys ./packages/workspace-tools/src/cli.ts run",
     "workspace:pack": "deno run --no-prompt --allow-read --allow-write ./packages/workspace-tools/src/cli.ts pack",
     "build:node": "deno task version:check && deno run --no-prompt --allow-read --allow-write=./dist ./scripts/clean-node-output.ts && tsc -p tsconfig.node-build.json && deno run --no-prompt --allow-read=./dist --allow-write=./dist ./scripts/prepare-cli-bin.ts",
