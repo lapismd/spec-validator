@@ -86,6 +86,7 @@ function providerLink(path = "../provider") {
   return {
     name: "@test/provider",
     path,
+    revision: "0123456789abcdef0123456789abcdef01234567",
     range: "^1.2.0",
     requiredExports: ["."],
     requiredFiles: ["dist/index.js"],
@@ -277,6 +278,7 @@ Deno.test(
           {
             name: "@test/consumer",
             path: "../consumer",
+            revision: "0123456789abcdef0123456789abcdef01234567",
             range: "^1.2.0",
             requiredExports: ["."],
             requiredFiles: ["dist/index.js"],

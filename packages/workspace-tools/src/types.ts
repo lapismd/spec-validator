@@ -9,6 +9,7 @@ export interface RepositoryDeclaration {
 export interface LinkDeclaration {
   name: string;
   path: string;
+  revision: string;
   range: string;
   requiredExports: string[];
   requiredFiles: string[];

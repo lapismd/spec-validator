@@ -14,6 +14,7 @@ const REPOSITORY_KEYS = new Set(["name", "packages", "workspaceRoot"]);
 const LINK_KEYS = new Set([
   "name",
   "path",
+  "revision",
   "range",
   "requiredExports",
   "requiredFiles",
@@ -174,6 +175,7 @@ export function parseWorkspaceDeclaration(
     return {
       name: stringValue(link.name, `${label}.name`),
       path: target,
+      revision: stringValue(link.revision, `${label}.revision`),
       range,
       requiredExports: stringArray(
         link.requiredExports,
@@ -182,6 +184,14 @@ export function parseWorkspaceDeclaration(
       requiredFiles: stringArray(link.requiredFiles, `${label}.requiredFiles`),
     };
   });
+
+  for (const [index, link] of links.entries()) {
+    if (!/^[0-9a-f]{40}$/u.test(link.revision)) {
+      throw new Error(
+        `${source}.links[${index}].revision must be a full commit ID`,
+      );
+    }
+  }
 
   const names = links.map((link) => link.name);
   if (new Set(names).size !== names.length) {

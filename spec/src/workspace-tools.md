@@ -24,7 +24,7 @@ before using that permission.
 
 ### Acceptance details
 
-- Each link MUST declare a package name, relative target, portable range, required exports, and required built files.
+- Each link MUST declare a package name, relative target, full recorded commit ID for CI checkout, portable range, required exports, and required built files.
 - Relative targets MUST resolve inside the declared shared workspace root.
 - The package name and version read from the target manifest MUST satisfy the declaration before any task or mutation runs.
 - Unknown fields, duplicate packages, invalid ranges, and malformed paths MUST fail closed with an actionable diagnostic.
