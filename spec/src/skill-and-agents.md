@@ -15,6 +15,6 @@ The shipped skill teaches agents how to use this CLI. It installs only to the us
 ### Acceptance details
 
 - The command MUST NOT write `.cursor/skills/`, `~/.cursor/skills/`, or project `.agents/skills/`.
-- The skill MUST tell agents to treat `spec/src` as authority and to prefer `--json` when parsing CLI output.
+- The skill MUST tell agents to treat `spec/src` as authority, prefer `--json` when parsing CLI output, and use Deno tasks as the canonical automation entry points.
 - The skill MUST NOT restate repository-specific architecture.
 - Doctor MAY warn when the global skill file is absent and MAY install it only with `--fix --skill`.

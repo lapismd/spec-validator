@@ -6,6 +6,7 @@
 - [Configuration](configuration.md)
 - [Validators](validators.md)
 - [CLI](cli.md)
+- [Workspace tools](workspace-tools.md)
 - [Doctor and init](doctor-and-init.md)
 - [Search and QMD](search-and-qmd.md)
 - [Skill and agents](skill-and-agents.md)

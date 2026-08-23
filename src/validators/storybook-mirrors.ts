@@ -1,9 +1,13 @@
-import { existsSync, readFileSync, readdirSync } from "node:fs";
-import path from "node:path";
 import ts from "typescript";
 
 import { diagnostic } from "../diagnostics.js";
 import { relativePath, toPosix } from "../model.js";
+import {
+  existsSync,
+  path,
+  readdirSync,
+  readFileSync,
+} from "../platform/current.js";
 import type { ValidationContext } from "../types.js";
 
 export const name = "storybookMirrors";
@@ -31,16 +35,18 @@ function collectMdx(directory: string): string[] {
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
     const absolutePath = path.join(directory, entry.name);
     if (entry.isDirectory()) entries.push(...collectMdx(absolutePath));
-    else if (entry.isFile() && entry.name.endsWith(".mdx"))
+    else if (entry.isFile() && entry.name.endsWith(".mdx")) {
       entries.push(absolutePath);
+    }
   }
   return entries.sort();
 }
 
 function propertyName(node: ts.ObjectLiteralElementLike): string | null {
   if (!("name" in node) || !node.name) return null;
-  if (ts.isIdentifier(node.name) || ts.isStringLiteral(node.name))
+  if (ts.isIdentifier(node.name) || ts.isStringLiteral(node.name)) {
     return node.name.text;
+  }
   return null;
 }
 

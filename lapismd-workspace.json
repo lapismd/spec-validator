@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "repository": {
+    "name": "spec-validator",
+    "packages": ["@lapismd/spec-validator", "@lapismd/workspace-tools"],
+    "workspaceRoot": ".."
+  },
+  "links": []
+}

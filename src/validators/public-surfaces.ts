@@ -1,8 +1,11 @@
-import { existsSync, readFileSync, readdirSync } from "node:fs";
-import path from "node:path";
-
 import { diagnostic } from "../diagnostics.js";
 import { relativePath } from "../model.js";
+import {
+  existsSync,
+  path,
+  readdirSync,
+  readFileSync,
+} from "../platform/current.js";
 import type { Diagnostic, ValidationContext } from "../types.js";
 
 export const name = "publicSurfaces";
@@ -25,8 +28,9 @@ function discoverCatalogTitles(repoRoot: string, roots: string[]): string[] {
   const titles: string[] = [];
   for (const root of roots) {
     for (const absolutePath of sourceFiles(path.join(repoRoot, root))) {
-      if (relativePath(repoRoot, absolutePath).startsWith("src/spec/"))
+      if (relativePath(repoRoot, absolutePath).startsWith("src/spec/")) {
         continue;
+      }
       const source = readFileSync(absolutePath, "utf8");
       const match =
         /defineMeta(?:<[^>]+>)?\s*\(\s*\{[\s\S]*?\btitle\s*:\s*["'`]([^"'`]+)["'`]/.exec(

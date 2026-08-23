@@ -21,8 +21,8 @@ mappings, Storybook conventions, and additional validation lanes.
 
 ## Requirements
 
-- Node.js 22 or newer
-- pnpm for the examples below
+- Deno 2.9.5
+- Node.js 22 or newer for npm artifact compatibility and optional QMD tooling
 - mdBook when the `build`, `serve`, or aggregate `check` commands are enabled
 
 QMD support is optional and only required for `search` and `index`.
@@ -30,9 +30,9 @@ QMD support is optional and only required for `search` and `index`.
 ## Install and initialize
 
 ```bash
-pnpm add -D @lapismd/spec-validator
-pnpm exec spec-validator init --profile heading
-pnpm exec spec-validator check
+deno add --dev npm:@lapismd/spec-validator
+deno run -A npm:@lapismd/spec-validator init --profile heading
+deno run -A npm:@lapismd/spec-validator check
 ```
 
 Use `--profile table` for a table-based requirement specification. Without an
@@ -98,10 +98,10 @@ Built-in validators are disabled unless a config or profile enables them. Run
 Examples:
 
 ```bash
-pnpm exec spec-validator validate --only governance,verification
-pnpm exec spec-validator first --base main --head @
-pnpm exec spec-validator doctor --fix --skill
-pnpm exec spec-validator search -- "SV-GOV-001"
+deno run -A npm:@lapismd/spec-validator validate --only governance,verification
+deno run -A npm:@lapismd/spec-validator first --base main --head @
+deno run -A npm:@lapismd/spec-validator doctor --fix --skill
+deno run -A npm:@lapismd/spec-validator search -- "SV-GOV-001"
 ```
 
 Pretty color output is used on a TTY. Pass `--json` for versioned,
@@ -110,10 +110,10 @@ piping human-readable output.
 
 ## Optional QMD support
 
-Install `@tobilu/qmd` as a root development dependency when enabling QMD. pnpm
-must also allow the `better-sqlite3` and `node-llama-cpp` build scripts so the
-local index can open. QMD is a discovery cache; canonical Markdown remains the
-authority.
+Install `@tobilu/qmd` as a root development dependency when enabling QMD. The
+root Deno configuration must also list `better-sqlite3` and `node-llama-cpp` in
+`allowScripts` so the local index can open. QMD is a discovery cache; canonical
+Markdown remains the authority.
 
 ## Library API
 

@@ -30,7 +30,7 @@ test("classifies a Node ABI mismatch", () => {
   };
   assert.equal(looksLikeAbiMismatch(result), true);
   assert.equal(looksLikeMissingNativeBinding(result), false);
-  assert.match(nativeModuleAdvice(result) ?? "", /pnpm install --force/);
+  assert.match(nativeModuleAdvice(result) ?? "", /deno install --frozen=false/);
 });
 
 test("classifies a missing better-sqlite3 binding", () => {
@@ -42,7 +42,7 @@ test("classifies a missing better-sqlite3 binding", () => {
   assert.equal(looksLikeAbiMismatch(result), false);
   assert.match(
     nativeModuleAdvice(result) ?? "",
-    /allow better-sqlite3 and node-llama-cpp builds in pnpm-workspace.yaml/,
+    /allow better-sqlite3 and node-llama-cpp scripts in deno.json/,
   );
 });
 

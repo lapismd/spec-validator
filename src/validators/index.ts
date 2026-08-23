@@ -39,7 +39,9 @@ export function assertKnownValidatorNames(
   for (const name of names ?? []) {
     if (!available.includes(name)) {
       throw new UsageError(
-        `unknown validator ${name}; available validators: ${available.join(", ")}`,
+        `unknown validator ${name}; available validators: ${available.join(
+          ", ",
+        )}`,
       );
     }
   }

@@ -14,7 +14,7 @@
   "author": "Steve Juma<help@lapis.md>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/lapismd/spec-validator.git"
+    "url": "git+https://github.com/lapismd/spec-validator.git"
   },
   "publishConfig": {
     "access": "public",
@@ -27,6 +27,8 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "deno": "./dist/deno/index.js",
+      "node": "./dist/index.js",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
@@ -38,28 +40,30 @@
     "README.md",
     "LICENSE"
   ],
-  "packageManager": "pnpm@10.32.1",
   "engines": {
+    "deno": "2.9.5",
     "node": ">=22"
   },
   "scripts": {
-    "build:node": "node ./scripts/clean-node-output.mjs && tsc -p tsconfig.node-build.json && node ./scripts/prepare-cli-bin.mjs",
-    "prepare": "pnpm build:node",
-    "prepack": "pnpm build:node",
-    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.node-build.json --noEmit",
-    "test": "tsx --test 'src/**/*.spec.ts'",
-    "spec:validate": "node ./dist/cli.js validate",
-    "spec:test": "pnpm test",
-    "spec:build": "node ./dist/cli.js build",
-    "spec:serve": "node ./dist/cli.js serve",
-    "spec:first": "node ./dist/cli.js first",
-    "spec:check": "pnpm build:node && node ./dist/cli.js check",
-    "spec:index": "node ./dist/cli.js index",
-    "spec:search": "node ./dist/cli.js search",
-    "spec:lint": "node ./dist/cli.js validate --only markdownlint",
-    "doctor": "node ./dist/cli.js doctor",
-    "fmt": "prettier . --write",
-    "fmt:check": "prettier . --check"
+    "build": "deno task build",
+    "build:node": "deno task build:node",
+    "prepare": "deno task build",
+    "prepack": "deno task build",
+    "typecheck": "deno task typecheck",
+    "test": "deno task test",
+    "publint": "deno task publint",
+    "spec:validate": "deno task spec:validate",
+    "spec:test": "deno task test",
+    "spec:build": "deno task spec:build",
+    "spec:serve": "deno task spec:serve",
+    "spec:first": "deno task spec:first",
+    "spec:check": "deno task spec:check",
+    "spec:index": "deno task spec:index",
+    "spec:search": "deno task spec:search",
+    "spec:lint": "deno task spec:lint",
+    "doctor": "deno task doctor",
+    "fmt": "deno task fmt",
+    "fmt:check": "deno task fmt:check"
   },
   "peerDependencies": {
     "@tobilu/qmd": "2.5.3"
@@ -78,6 +82,7 @@
     "@types/node": "^22.15.0",
     "markdownlint-cli2": "^0.22.1",
     "prettier": "^3.6.2",
+    "publint": "^0.3.24",
     "tsx": "^4.20.5"
   }
 }

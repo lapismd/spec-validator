@@ -1,5 +1,7 @@
 import { formatDiagnostic } from "./diagnostics.js";
 import { createPalette, resolveColorEnabled } from "./color.js";
+import { runtime } from "./platform/current.js";
+import type { WritableStreamLike } from "./platform/types.js";
 import type {
   Diagnostic,
   DoctorCheck,
@@ -16,10 +18,10 @@ export interface Reporter {
 
 export function createReporter(
   output: OutputOptions,
-  stdout: NodeJS.WritableStream = process.stdout,
-  stderr: NodeJS.WritableStream = process.stderr,
+  stdout: WritableStreamLike = runtime.stdout,
+  stderr: WritableStreamLike = runtime.stderr,
 ): Reporter {
-  const color = resolveColorEnabled(output.color, stdout as NodeJS.WriteStream);
+  const color = resolveColorEnabled(output.color, stdout);
   const paint = createPalette(output.json ? false : color);
 
   return {
@@ -48,7 +50,9 @@ export function createReporter(
           return;
         }
         stdout.write(
-          `${paint.green("Specification validated:")} ${report.stats?.validators} validators, ${report.stats?.chapters} chapters, ${report.stats?.requirements} requirements.\n`,
+          `${paint.green(
+            "Specification validated:",
+          )} ${report.stats?.validators} validators, ${report.stats?.chapters} chapters, ${report.stats?.requirements} requirements.\n`,
         );
         return;
       }
@@ -81,14 +85,16 @@ function formatPrettyDiagnostic(
   paint: ReturnType<typeof createPalette>,
 ): string {
   const subject = finding.subject ? paint.cyan(` [${finding.subject}]`) : "";
-  return `${paint.bold(finding.code)} ${paint.yellow(finding.rule)} ${paint.dim(`${finding.file}:${finding.line}`)}${subject} — ${finding.message}`;
+  return `${paint.bold(finding.code)} ${paint.yellow(finding.rule)} ${paint.dim(
+    `${finding.file}:${finding.line}`,
+  )}${subject} — ${finding.message}`;
 }
 
 function writeDoctorPretty(
   checks: DoctorCheck[],
   report: JsonReport,
   paint: ReturnType<typeof createPalette>,
-  stdout: NodeJS.WritableStream,
+  stdout: WritableStreamLike,
 ): void {
   const mark = {
     pass: paint.green("pass"),

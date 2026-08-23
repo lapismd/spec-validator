@@ -1,6 +1,5 @@
-import { spawnSync } from "node:child_process";
-
 import { assertCommandArgs } from "../argv.js";
+import { runtime, spawnSync } from "../platform/current.js";
 import type { Reporter } from "../reporter.js";
 
 export function buildCommand(
@@ -14,9 +13,8 @@ export function buildCommand(
     mode === "serve" ? ["serve", "./spec", "--open"] : ["build", "./spec"];
   const result = spawnSync("mdbook", args, {
     cwd: repoRoot,
-    encoding: "utf8",
     stdio: reporter.json ? ["ignore", "pipe", "pipe"] : "inherit",
-    shell: process.platform === "win32",
+    shell: runtime.platform === "win32",
   });
   const status = result.status ?? 1;
   if (reporter.json) {

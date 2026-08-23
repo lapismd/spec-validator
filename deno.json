@@ -1,0 +1,42 @@
+{
+  "workspace": ["./packages/workspace-tools"],
+  "nodeModulesDir": "auto",
+  "nodeModulesLinker": "isolated",
+  "allowScripts": ["npm:better-sqlite3", "npm:esbuild", "npm:node-llama-cpp"],
+  "fmt": {
+    "proseWrap": "preserve"
+  },
+  "tasks": {
+    "version:check": "deno run --no-prompt ./scripts/check-deno-version.ts",
+    "install": "deno task version:check && deno install --frozen=false",
+    "ci": "deno task version:check && deno ci",
+    "workspace:check": "deno run --no-prompt --allow-read ./packages/workspace-tools/src/cli.ts links check",
+    "workspace:sync": "deno run --no-prompt --allow-read --allow-write=./node_modules ./packages/workspace-tools/src/cli.ts links sync",
+    "workspace:run": "deno run --no-prompt --allow-read --allow-run --allow-env --allow-sys ./packages/workspace-tools/src/cli.ts run",
+    "workspace:pack": "deno run --no-prompt --allow-read --allow-write ./packages/workspace-tools/src/cli.ts pack",
+    "build:node": "deno task version:check && deno run --no-prompt --allow-read --allow-write=./dist ./scripts/clean-node-output.ts && tsc -p tsconfig.node-build.json && deno run --no-prompt --allow-read=./dist --allow-write=./dist ./scripts/prepare-cli-bin.ts",
+    "build:deno": "deno bundle --unstable-sloppy-imports --external=typescript --external=jiti --check --sourcemap=linked --output ./dist/deno/index.js ./src/index.deno.ts && deno bundle --unstable-sloppy-imports --external=typescript --external=jiti --check --sourcemap=linked --output ./dist/deno/cli.js ./src/cli.deno.ts",
+    "build": "deno task build:node && deno task build:deno",
+    "typecheck": "deno task version:check && deno check --unstable-sloppy-imports ./src/index.deno.ts ./src/cli.deno.ts ./packages/workspace-tools/src/mod.ts ./packages/workspace-tools/src/cli.ts && tsc -p tsconfig.json --noEmit && tsc -p tsconfig.node-build.json --noEmit",
+    "audit:runtime": "deno run --no-prompt --allow-read ./scripts/check-runtime-boundaries.ts",
+    "test:workspace": "deno test --no-prompt --allow-read --allow-write --allow-run --allow-env --allow-sys ./packages/workspace-tools/src",
+    "test:deno": "deno test --no-prompt --allow-read=./dist --allow-run=deno ./tests/deno-cli.test.ts",
+    "test:node": "node --import tsx --import ./src/test-setup.ts --test 'src/**/*.spec.ts'",
+    "test:all": "deno task test:workspace && deno task test:deno && deno task test:node",
+    "test": "deno task build && deno task test:all",
+    "publint": "deno task build && publint",
+    "spec:validate": "deno task build && deno run -A ./dist/deno/cli.js validate",
+    "spec:test": "deno task test",
+    "spec:build": "deno task build && deno run -A ./dist/deno/cli.js build",
+    "spec:serve": "deno task build && deno run -A ./dist/deno/cli.js serve",
+    "spec:first": "deno task build && deno run -A ./dist/deno/cli.js first",
+    "spec:check": "deno task build && deno run -A ./dist/deno/cli.js check",
+    "spec:index": "deno task build && deno run -A ./dist/deno/cli.js index",
+    "spec:search": "deno task build && deno run -A ./dist/deno/cli.js search",
+    "spec:lint": "deno task build && deno run -A ./dist/deno/cli.js validate --only markdownlint",
+    "doctor": "deno task build && deno run -A ./dist/deno/cli.js doctor",
+    "fmt": "prettier . --write",
+    "fmt:check": "prettier . --check",
+    "check": "deno task typecheck && deno task audit:runtime && deno task spec:check && deno task publint"
+  }
+}

@@ -258,7 +258,9 @@ export function validate(context: ValidationContext) {
             file: file.relativePath,
             line: row.line,
             subject: row.id,
-            message: `unsupported status “${row.status || "(empty)"}”; use ${options.statuses.join(", ")}`,
+            message: `unsupported status “${row.status || "(empty)"}”; use ${options.statuses.join(
+              ", ",
+            )}`,
           }),
         );
       }

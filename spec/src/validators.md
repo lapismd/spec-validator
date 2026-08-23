@@ -23,11 +23,11 @@ Built-in validators are named modules. Each can be enabled, configured, or repla
 
 ## SV-VAL-002 — Extension contract
 
-**Requirement.** A validator MUST be a module with a stable `name` and a `validate(context)` function, and optional validators MUST stay inert when disabled.
+**Requirement.** A validator MUST be a runtime-portable module with a stable `name` and a `validate(context)` function, and optional validators MUST stay inert when disabled.
 
 ### Acceptance details
 
-- `publicSurfaces`, `storybookCatalog`, `storybookMirrors`, `qmd`, `markdownlint`, and `packageManifest` MUST run only when enabled.
+- `publicSurfaces`, `storybookCatalog`, `storybookMirrors`, `qmd`, `markdownlint`, and `packageManifest` MUST run only when enabled, and first-party validators MUST use the selected platform contract rather than importing Node APIs directly.
 - `specFirst` MUST classify path-to-chapter maps from config rather than hard-coded foreign trees.
 - Requirement ID and heading or table style MUST come from resolved config.
 - `list` MUST report each validator’s enabled state and options.

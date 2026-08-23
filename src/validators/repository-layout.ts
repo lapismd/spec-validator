@@ -1,7 +1,5 @@
-import { existsSync, readdirSync } from "node:fs";
-import path from "node:path";
-
 import { diagnostic } from "../diagnostics.js";
+import { existsSync, path, readdirSync } from "../platform/current.js";
 import type { ValidationContext } from "../types.js";
 
 export const name = "repositoryLayout";
@@ -60,7 +58,9 @@ export function validate(context: ValidationContext) {
           code: "SPEC-LAYOUT-ROOT-MARKDOWN",
           rule,
           file,
-          message: `package-root Markdown is limited to ${options.allowedRootMarkdown.join(", ")}`,
+          message: `package-root Markdown is limited to ${options.allowedRootMarkdown.join(
+            ", ",
+          )}`,
         }),
       );
     }

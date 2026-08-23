@@ -1,7 +1,6 @@
-import { existsSync, readFileSync } from "node:fs";
-import path from "node:path";
 import { createJiti } from "jiti";
 
+import { existsSync, path, readFileSync } from "./platform/current.js";
 import type {
   ResolvedConfig,
   ResolvedValidators,

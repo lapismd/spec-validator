@@ -9,5 +9,11 @@
     "sourceMap": true
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["src/**/*.spec.ts"]
+  "exclude": [
+    "src/**/*.deno.ts",
+    "src/**/*.spec.ts",
+    "src/**/*.test.ts",
+    "src/platform/deno.ts",
+    "src/test-setup.ts"
+  ]
 }

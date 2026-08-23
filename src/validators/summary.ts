@@ -1,8 +1,6 @@
-import { existsSync } from "node:fs";
-import path from "node:path";
-
 import { diagnostic } from "../diagnostics.js";
 import { groupBy, localMarkdownTargets, toPosix } from "../model.js";
+import { existsSync, path } from "../platform/current.js";
 import type { ValidationContext } from "../types.js";
 
 export const name = "summary";
@@ -71,8 +69,9 @@ export function validate(context: ValidationContext) {
       for (const target of localMarkdownTargets(lines[index]!)) {
         const local = withoutFragment(target);
         if (!local) continue;
-        if (existsSync(path.resolve(path.dirname(file.absolutePath), local)))
+        if (existsSync(path.resolve(path.dirname(file.absolutePath), local))) {
           continue;
+        }
         findings.push(
           diagnostic({
             code: "SPEC-LINK-BROKEN",

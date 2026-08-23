@@ -1,16 +1,13 @@
-import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
-import path from "node:path";
-
 import { assertCommandArgs, UsageError } from "../argv.js";
 import { loadResolvedConfig } from "../config.js";
+import { existsSync, path, runtime, spawnSync } from "../platform/current.js";
 import type { Reporter } from "../reporter.js";
 
 const DEFAULT_LIMIT = 10;
 
 export function resolveQmdBinary(
   repoRoot: string,
-  platform = process.platform,
+  platform = runtime.platform,
 ): string {
   return path.join(
     repoRoot,
@@ -61,10 +58,11 @@ export function nativeModuleAdvice(result: {
   error?: Error;
 }): string | undefined {
   if (looksLikeAbiMismatch(result)) {
-    return `QMD native modules do not match the active Node ABI ${process.versions.modules}; run pnpm install --force under the active Node version.`;
+    const host = runtime.nodeAbi ? `Node ABI ${runtime.nodeAbi}` : "Deno 2.9.5";
+    return `QMD native modules do not match the active ${host}; run deno install --frozen=false with the required Deno version.`;
   }
   if (looksLikeMissingNativeBinding(result)) {
-    return "QMD native modules are not built; allow better-sqlite3 and node-llama-cpp builds in pnpm-workspace.yaml, then run pnpm install.";
+    return "QMD native modules are not built; allow better-sqlite3 and node-llama-cpp scripts in deno.json, then run deno install --frozen=false.";
   }
   return undefined;
 }
@@ -129,38 +127,45 @@ export async function searchCommand(
     })
     .join(" ")
     .trim();
-  if (command === "search" && !query)
+  if (command === "search" && !query) {
     throw new UsageError("search requires a query");
+  }
 
   const configPath = path.join(repoRoot, options.configPath);
   if (!existsSync(configPath)) {
     return fail(
       reporter,
-      `Missing ${options.configPath}; restore the tracked QMD configuration.\n${fallback(query)}`,
+      `Missing ${options.configPath}; restore the tracked QMD configuration.\n${fallback(
+        query,
+      )}`,
     );
   }
   const binary = resolveQmdBinary(repoRoot);
   if (!existsSync(binary)) {
     return fail(
       reporter,
-      `Missing the repository-local QMD binary; run pnpm install.\n${fallback(query)}`,
+      `Missing the repository-local QMD binary; run deno install --frozen=false.\n${fallback(
+        query,
+      )}`,
     );
   }
 
   const run = (args: string[]) =>
     spawnSync(binary, args, {
       cwd: repoRoot,
-      encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
-      env: { ...process.env, PWD: repoRoot },
-      shell: process.platform === "win32",
+      env: { ...runtime.env, PWD: repoRoot },
+      shell: runtime.platform === "win32",
     });
 
   const refresh = run(["update"]);
   if ((refresh.status ?? 1) !== 0) {
     return fail(
       reporter,
-      `Specification index refresh failed.\n${nativeOrFallbackMessage(refresh, query)}`,
+      `Specification index refresh failed.\n${nativeOrFallbackMessage(
+        refresh,
+        query,
+      )}`,
       refresh.status ?? 1,
     );
   }
@@ -169,7 +174,10 @@ export async function searchCommand(
     if ((embed.status ?? 1) !== 0) {
       return fail(
         reporter,
-        `Specification embedding or model initialization failed; retry or omit --semantic.\n${nativeOrFallbackMessage(embed, query)}`,
+        `Specification embedding or model initialization failed; retry or omit --semantic.\n${nativeOrFallbackMessage(
+          embed,
+          query,
+        )}`,
         embed.status ?? 1,
       );
     }

@@ -1,7 +1,6 @@
-import { spawnSync } from "node:child_process";
-
 import { assertCommandArgs } from "../argv.js";
 import { loadResolvedConfig } from "../config.js";
+import { runtime, spawnSync } from "../platform/current.js";
 import type { Reporter } from "../reporter.js";
 import type { CheckLaneConfig, CheckLaneResult } from "../types.js";
 import { runFirst } from "./first.js";
@@ -10,9 +9,8 @@ import { runValidation } from "./validate.js";
 function runLane(config: CheckLaneConfig, repoRoot: string): CheckLaneResult {
   const result = spawnSync(config.command, config.args ?? [], {
     cwd: repoRoot,
-    encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
-    shell: process.platform === "win32",
+    shell: runtime.platform === "win32",
   });
   const exitCode = result.status ?? 1;
   return {

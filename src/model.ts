@@ -1,6 +1,9 @@
-import { existsSync, readFileSync, readdirSync } from "node:fs";
-import path from "node:path";
-
+import {
+  existsSync,
+  path,
+  readdirSync,
+  readFileSync,
+} from "./platform/current.js";
 import type {
   AcceptanceSection,
   CoverageRow,
@@ -153,7 +156,9 @@ function headingPattern(config: ResolvedConfig): RegExp {
   const id = config.idPattern.source.replace(/^\^|\$$/g, "");
   const surface = afterId.includes("<surface>") ? "(.+)" : "";
   return new RegExp(
-    `^${escapeRegExp(beforeId!)}(${id})${escapeRegExp(beforeSurface!)}${surface}${escapeRegExp(afterSurface!)}\\s*$`,
+    `^${escapeRegExp(beforeId!)}(${id})${escapeRegExp(
+      beforeSurface!,
+    )}${surface}${escapeRegExp(afterSurface!)}\\s*$`,
   );
 }
 

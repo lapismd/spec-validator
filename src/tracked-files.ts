@@ -1,6 +1,5 @@
-import { spawnSync } from "node:child_process";
-
 import { toPosix } from "./model.js";
+import { spawnSync } from "./platform/current.js";
 
 function tracked(
   command: string,
@@ -9,7 +8,6 @@ function tracked(
 ): { ok: true; files: string[] } | { ok: false; error: string } {
   const result = spawnSync(command, args, {
     cwd: repoRoot,
-    encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
   });
   if (result.error) return { ok: false, error: result.error.message };

@@ -1,6 +1,5 @@
-import path from "node:path";
-
 import { diagnostic } from "../diagnostics.js";
+import { path } from "../platform/current.js";
 import {
   groupBy,
   NORMATIVE_PATTERN,
@@ -157,7 +156,9 @@ export function validate(context: ValidationContext) {
             file: section.file,
             line: section.line,
             subject: section.id,
-            message: `add an “Acceptance details” subsection with at least ${minAcceptance} bullet${minAcceptance === 1 ? "" : "s"}`,
+            message: `add an “Acceptance details” subsection with at least ${minAcceptance} bullet${
+              minAcceptance === 1 ? "" : "s"
+            }`,
           }),
         );
       }
@@ -208,7 +209,9 @@ export function validate(context: ValidationContext) {
             file: section.file,
             line: section.line,
             subject: section.id,
-            message: `expected ${minAcceptance}${maxAcceptance === null ? " or more" : ` to ${maxAcceptance}`} acceptance bullets, found ${section.bullets.length}`,
+            message: `expected ${minAcceptance}${
+              maxAcceptance === null ? " or more" : ` to ${maxAcceptance}`
+            } acceptance bullets, found ${section.bullets.length}`,
           }),
         );
       }
@@ -294,8 +297,9 @@ export function validate(context: ValidationContext) {
       for (let index = start + 1; index < lines.length; index += 1) {
         if (/^##\s+/.test(lines[index]!)) break;
         const cells = splitMarkdownTableRow(lines[index]!);
-        if (!cells || cells.length !== 2 || cells[0] === "Protected area")
+        if (!cells || cells.length !== 2 || cells[0] === "Protected area") {
           continue;
+        }
         if (/^-+$/.test(cells[0]!.replaceAll(" ", ""))) continue;
         const key = cells[0]!.replace(/`/g, "").trim().toLowerCase();
         if (!seen.has(key)) {

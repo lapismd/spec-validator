@@ -1,6 +1,6 @@
 # Architecture
 
-The package is a Node.js CLI with a loadable config, a validator registry, and a shared specification model. Consumers later link the built `dist` output.
+The repository is Deno-first while publishing a Node-compatible CLI and TypeScript library. Deno owns dependency installation, repository tasks, tests, and first-party automation; npm metadata and built `dist` output remain the portable consumer contract.
 
 ## Public surface coverage
 
@@ -10,6 +10,7 @@ The package is a Node.js CLI with a loadable config, a validator registry, and a
 | Tracked-file discovery | Architecture    | SV-ARCH-002 |
 | Plugin contract        | Architecture    | SV-ARCH-003 |
 | QMD native builds      | Architecture    | SV-ARCH-004 |
+| Deno workspace         | Architecture    | SV-ARCH-005 |
 
 ## SV-ARCH-001 — CLI and registry
 
@@ -17,7 +18,7 @@ The package is a Node.js CLI with a loadable config, a validator registry, and a
 
 ### Acceptance details
 
-- The published bin MUST resolve to `dist/cli.js` and start with a Node shebang.
+- The published npm bin MUST resolve to `dist/cli.js` and start with a Node shebang, while the repository CLI MUST also run directly under Deno.
 - `defineConfig` MUST compose typed configuration fragments, including definition and reference matchers, exact repository-layout entries, verification multiplicity, mirror link styles, and table acceptance-detail policy; neutral profiles MUST provide reusable defaults without embedding repository policy.
 - Disabled validators MUST NOT run during `validate` or `check`.
 - The registry MUST accept extra plugin modules that export `name` and `validate`, and package builds MUST remove stale node output before compilation.
@@ -46,11 +47,22 @@ The package is a Node.js CLI with a loadable config, a validator registry, and a
 
 ## SV-ARCH-004 — QMD native builds
 
-**Requirement.** The root pnpm workspace configuration MUST approve QMD native lifecycle scripts, and `@tobilu/qmd` MUST remain a root-only optional peer rather than a published runtime dependency.
+**Requirement.** Root Deno configuration MUST approve only the reviewed QMD native lifecycle scripts, and `@tobilu/qmd` MUST remain a root-only optional peer rather than a published runtime dependency.
 
 ### Acceptance details
 
-- `pnpm-workspace.yaml` `allowBuilds` MUST allow `better-sqlite3`, `node-llama-cpp`, and local test tooling that requires lifecycle scripts.
+- Deno `allowScripts` MUST allow `better-sqlite3`, `node-llama-cpp`, and local test tooling that requires lifecycle scripts.
 - `@tobilu/qmd` MUST stay an optional peer and root development dependency.
 - Those native approvals MUST NOT enter a published runtime dependency list.
 - `esbuild` MAY be approved for local test tooling.
+
+## SV-ARCH-005 — Deno workspace
+
+**Requirement.** Deno 2.9.5 MUST be the canonical repository runtime, installer, task runner, and lockfile owner while npm artifacts remain compatible with supported Node consumers.
+
+### Acceptance details
+
+- The root MUST contain one `deno.json` and one `deno.lock`, use automatic isolated `node_modules`, reject any other Deno version through a canonical version-check task, and validate the built npm surface with `publint`.
+- `deno ci` MUST reproduce dependencies from the frozen lock before validation.
+- Active repository tasks and guidance MUST invoke Deno rather than pnpm or Turbo; package lifecycle scripts MAY delegate to canonical Deno tasks.
+- First-party Deno automation MUST use Deno or Web APIs; Node APIs MUST stay in explicit npm compatibility adapters and tests.

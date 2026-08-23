@@ -1,9 +1,6 @@
-import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
-import path from "node:path";
-
 import { diagnostic } from "../diagnostics.js";
 import { toPosix } from "../model.js";
+import { existsSync, path, spawnSync } from "../platform/current.js";
 import type {
   Diagnostic,
   ResolvedValidators,
@@ -94,8 +91,9 @@ export function classifySpecFirstChanges(
         [];
       return [{ chapters }];
     });
-    if (!matched.length && ignore.some((pattern) => pattern.test(file)))
+    if (!matched.length && ignore.some((pattern) => pattern.test(file))) {
       continue;
+    }
     const conditional = options.conditional[file];
     const conditionallyProtected = conditional
       ? !change.changedLines?.length ||
@@ -182,8 +180,9 @@ export function parseUnifiedDiff(source: string): SpecFirstChange[] {
       sawHeader = true;
       currentPaths = [...new Set(header.map(normalizePath))];
       for (const currentPath of currentPaths) {
-        if (!changes.has(currentPath))
+        if (!changes.has(currentPath)) {
           changes.set(currentPath, { path: currentPath, changedLines: [] });
+        }
       }
       continue;
     }
@@ -191,11 +190,13 @@ export function parseUnifiedDiff(source: string): SpecFirstChange[] {
       !currentPaths.length ||
       line.startsWith("+++") ||
       line.startsWith("---")
-    )
+    ) {
       continue;
+    }
     if (line.startsWith("+") || line.startsWith("-")) {
-      for (const currentPath of currentPaths)
+      for (const currentPath of currentPaths) {
         changes.get(currentPath)!.changedLines!.push(line.slice(1));
+      }
     }
   }
   if (source.trim() && !sawHeader) {
@@ -209,14 +210,15 @@ export function parseUnifiedDiff(source: string): SpecFirstChange[] {
 function run(command: string, args: string[], cwd: string): string {
   const result = spawnSync(command, args, {
     cwd,
-    encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
     maxBuffer: 64 * 1024 * 1024,
   });
   if (result.error) throw result.error;
   if (result.status !== 0) {
     throw new Error(
-      `${command} ${args.join(" ")} failed: ${result.stderr.trim() || result.stdout.trim() || `exit ${result.status}`}`,
+      `${command} ${args.join(" ")} failed: ${
+        result.stderr.trim() || result.stdout.trim() || `exit ${result.status}`
+      }`,
     );
   }
   return result.stdout;
@@ -227,8 +229,9 @@ export function changesFromVcs(
   repoRoot: string,
   execute = run,
 ): SpecFirstChange[] {
-  if (options.files?.length)
+  if (options.files?.length) {
     return options.files.map((file) => ({ path: toPosix(file) }));
+  }
   if (options.base) {
     return parseUnifiedDiff(
       execute(

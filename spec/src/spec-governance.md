@@ -26,6 +26,7 @@ Specification changes precede or accompany protected implementation. Updating an
 | Skill payload and install command                         | `skill-and-agents.md`    |
 | Specification chapters, book, QMD config, and agent guide | `spec-governance.md`     |
 | Package manifests and build scripts                       | `architecture.md`        |
+| Deno workspace and cross-repository tooling               | `workspace-tools.md`     |
 
 ## SV-GOV-002 — Verification matrix
 
@@ -79,15 +80,15 @@ Specification changes precede or accompany protected implementation. Updating an
 
 - The guide MUST tell agents to update the owning chapter before protected implementation.
 - The guide MUST treat QMD hits as a cache and require opening the returned `spec/src` file.
-- The guide MUST require `pnpm spec:check` and `pnpm build:node` before a verified commit.
+- The guide MUST require `deno task spec:check` and `deno task build:node` before a verified commit.
 - README and skill text MUST NOT replace this guide as the implementation contract.
 
 ## SV-GOV-007 — Sibling resolution
 
-**Requirement.** Tracked `AGENTS.md` MUST require colocated LapisMD siblings to resolve through explicit `link:` dependencies or `link:`-valued root overrides without becoming workspace members.
+**Requirement.** Tracked `AGENTS.md` MUST require colocated LapisMD siblings to resolve through the repository-owned Deno linker without becoming workspace members.
 
 ### Acceptance details
 
-- Publishable manifests MUST retain portable ranges without machine-specific sibling paths.
+- Source manifests MAY retain explicit `link:` dependencies for local resolution, but staged publish manifests MUST contain portable ranges without machine-specific sibling paths.
 - Agents MUST NOT vendor sibling source, mutate sibling `node_modules`, or replace a local checkout with a registry copy.
 - A sibling that exports built output MUST be rebuilt before consumer validation.

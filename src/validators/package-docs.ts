@@ -1,7 +1,10 @@
-import { existsSync, readFileSync, readdirSync } from "node:fs";
-import path from "node:path";
-
 import { diagnostic } from "../diagnostics.js";
+import {
+  existsSync,
+  path,
+  readdirSync,
+  readFileSync,
+} from "../platform/current.js";
 import type { ValidationContext } from "../types.js";
 
 export const name = "packageDocs";

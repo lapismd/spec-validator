@@ -39,10 +39,14 @@ export default defineConfig(headingRequirements(), {
       ],
       rules: [
         {
-          pattern: "^src/(?:cli|argv|color|reporter)\\.ts$",
+          pattern: "^src/(?:cli(?:-core|\\.deno)?|argv|color|reporter)\\.ts$",
           chapters: ["spec/src/cli.md"],
         },
-        { pattern: "^src/index\\.ts$", chapters: ["spec/src/architecture.md"] },
+        {
+          pattern:
+            "^src/(?:index(?:-core|\\.deno)?|deno-contract|test-setup)\\.ts$|^src/platform/",
+          chapters: ["spec/src/architecture.md"],
+        },
         {
           pattern: "^src/commands/(?:validate|check|list|build|first)\\.ts$",
           chapters: ["spec/src/cli.md"],
@@ -55,7 +59,10 @@ export default defineConfig(headingRequirements(), {
           pattern: "^spec-validator\\.config\\.(?:ts|mjs|json)$",
           chapters: ["spec/src/configuration.md"],
         },
-        { pattern: "^src/validators/", chapters: ["spec/src/validators.md"] },
+        {
+          pattern: "^src/validators/(?!.*\\.(?:spec|test)\\.[cm]?[jt]sx?$)",
+          chapters: ["spec/src/validators.md"],
+        },
         {
           pattern:
             "^src/(?:model|tracked-files|types|diagnostics|context)\\.ts$",
@@ -74,6 +81,10 @@ export default defineConfig(headingRequirements(), {
           chapters: ["spec/src/skill-and-agents.md"],
         },
         { pattern: "^scripts/", chapters: ["spec/src/architecture.md"] },
+        {
+          pattern: "^packages/workspace-tools/",
+          chapters: ["spec/src/workspace-tools.md"],
+        },
         { pattern: "^skill/", chapters: ["spec/src/skill-and-agents.md"] },
         {
           pattern:
@@ -81,9 +92,12 @@ export default defineConfig(headingRequirements(), {
           chapters: ["spec/src/spec-governance.md"],
         },
         {
-          pattern:
-            "^(?:package\\.json|pnpm-lock\\.yaml|pnpm-workspace\\.yaml)$",
+          pattern: "^(?:package\\.json|deno\\.(?:json|lock))$",
           chapters: ["spec/src/architecture.md"],
+        },
+        {
+          pattern: "^lapismd-workspace\\.json$",
+          chapters: ["spec/src/workspace-tools.md"],
         },
       ],
       protected: [
@@ -91,14 +105,15 @@ export default defineConfig(headingRequirements(), {
         "^spec-validator\\.config\\.(?:ts|mjs|json)$",
         "^skill/",
         "^scripts/",
+        "^packages/workspace-tools/",
         "^spec/book\\.toml$",
-        "^(?:package\\.json|pnpm-lock\\.yaml|pnpm-workspace\\.yaml)$",
+        "^(?:package\\.json|deno\\.(?:json|lock)|lapismd-workspace\\.json)$",
         "^AGENTS\\.md$",
       ],
     },
   },
   check: {
-    lanes: [{ name: "tests", command: "pnpm", args: ["test"] }],
+    lanes: [{ name: "tests", command: "deno", args: ["task", "test:all"] }],
     build: true,
     first: true,
   },

@@ -1,8 +1,5 @@
-import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
-import path from "node:path";
-
 import { diagnostic } from "../diagnostics.js";
+import { existsSync, path, runtime, spawnSync } from "../platform/current.js";
 import type { ValidationContext } from "../types.js";
 
 export const name = "markdownlint";
@@ -17,7 +14,7 @@ export function validate(context: ValidationContext) {
     context.model.repoRoot,
     "node_modules",
     ".bin",
-    process.platform === "win32"
+    runtime.platform === "win32"
       ? "markdownlint-cli2.cmd"
       : "markdownlint-cli2",
   );
@@ -26,15 +23,15 @@ export function validate(context: ValidationContext) {
     args,
     {
       cwd: context.model.repoRoot,
-      encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
-      shell: process.platform === "win32",
+      shell: runtime.platform === "win32",
     },
   );
   if (
     !existsSync(binary) &&
     result.error &&
-    (result.error as NodeJS.ErrnoException).code === "ENOENT"
+    "code" in result.error &&
+    result.error.code === "ENOENT"
   ) {
     return [
       diagnostic({

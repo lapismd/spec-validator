@@ -27,6 +27,6 @@ QMD is a local discovery cache over canonical Markdown. It is not an authority a
 ### Acceptance details
 
 - The wrapper MUST resolve the consumer-local `node_modules/.bin/qmd` and capture its stdout and stderr.
-- A Node ABI mismatch MUST tell the operator to reinstall under the active Node version.
-- A missing native binding MUST tell the operator to allow `better-sqlite3` and `node-llama-cpp` builds in `pnpm-workspace.yaml` and reinstall.
+- A runtime ABI mismatch MUST identify the active Deno or Node compatibility host and tell the operator to reinstall with Deno 2.9.5.
+- A missing native binding MUST tell the operator to allow `better-sqlite3` and `node-llama-cpp` scripts in `deno.json` and reinstall with Deno.
 - The fallback MUST be `rg -n -i --glob '*.md' '<query>' spec/src`.

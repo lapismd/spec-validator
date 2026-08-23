@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import {
-  mkdtempSync,
   mkdirSync,
+  mkdtempSync,
+  readFileSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -90,6 +91,42 @@ test("check JSON is one document with ordered lane results", () => {
     assert.deepEqual(
       report.lanes.map((lane) => lane.name),
       ["validate"],
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("init creates the canonical Deno contract without clobbering scripts", () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), "spec-validator-init-"));
+  try {
+    writeFileSync(
+      path.join(root, "package.json"),
+      `${JSON.stringify({ name: "fixture", scripts: { existing: "keep" } })}\n`,
+    );
+    const result = run(["init", "--json"], root);
+    assert.equal(result.status, 0, result.stderr);
+    const deno = JSON.parse(
+      readFileSync(path.join(root, "deno.json"), "utf8"),
+    ) as {
+      tasks: Record<string, string>;
+    };
+    assert.equal(
+      deno.tasks["version:check"],
+      "deno run --no-prompt ./scripts/check-deno-version.ts",
+    );
+    assert.equal(
+      deno.tasks["spec:check"],
+      "deno task version:check && spec-validator check",
+    );
+    const manifest = JSON.parse(
+      readFileSync(path.join(root, "package.json"), "utf8"),
+    ) as { scripts: Record<string, string> };
+    assert.equal(manifest.scripts.existing, "keep");
+    assert.equal(manifest.scripts["spec:check"], "deno task spec:check");
+    assert.match(
+      readFileSync(path.join(root, "scripts/check-deno-version.ts"), "utf8"),
+      /2\.9\.5/u,
     );
   } finally {
     rmSync(root, { recursive: true, force: true });

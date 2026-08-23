@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -65,7 +65,7 @@ test("nested Storybook order preserves parent index pages under a specification-
     writeFileSync(path.join(root, "spec/src/index.md"), "# Introduction\n");
     writeFileSync(path.join(root, "spec/src/plugins/index.md"), "# Plugins\n");
     writeFileSync(path.join(root, "spec/src/plugins/ai.md"), "# AI\n");
-    const mirror = (target, title) =>
+    const mirror = (target: string, title: string) =>
       `import { Markdown, Meta } from "@storybook/addon-docs/blocks";\nimport content from "${target}?raw";\n\n<Meta title="${title}" />\n\n<Markdown>{content}</Markdown>\n`;
     writeFileSync(
       path.join(root, "stories/spec/index.mdx"),
@@ -130,7 +130,7 @@ test("nested Storybook order ignores structural groups without SUMMARY chapters"
     );
     writeFileSync(path.join(root, "spec/src/index.md"), "# Introduction\n");
     writeFileSync(path.join(root, "spec/src/shadcn/layout.md"), "# Layout\n");
-    const mirror = (target, title) =>
+    const mirror = (target: string, title: string) =>
       `import { Markdown, Meta } from "@storybook/addon-docs/blocks";\nimport content from "${target}?raw";\n\n<Meta title="${title}" />\n\n<Markdown>{content}</Markdown>\n`;
     writeFileSync(
       path.join(root, "stories/spec/index.mdx"),

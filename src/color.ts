@@ -1,9 +1,10 @@
+import { runtime } from "./platform/current.js";
 import type { ColorMode } from "./types.js";
 
 export function resolveColorEnabled(
   mode: ColorMode,
-  stream: { isTTY?: boolean } = process.stdout,
-  environment: NodeJS.ProcessEnv = process.env,
+  stream: { isTTY?: boolean } = runtime.stdout,
+  environment: Record<string, string | undefined> = runtime.env,
 ): boolean {
   if (mode === "never") return false;
   if (environment.NO_COLOR) return false;

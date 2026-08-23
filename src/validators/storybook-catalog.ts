@@ -1,9 +1,13 @@
-import { existsSync, readFileSync, readdirSync } from "node:fs";
-import path from "node:path";
 import ts from "typescript";
 
 import { diagnostic } from "../diagnostics.js";
 import { relativePath } from "../model.js";
+import {
+  existsSync,
+  path,
+  readdirSync,
+  readFileSync,
+} from "../platform/current.js";
 import type { ValidationContext } from "../types.js";
 
 export const name = "storybookCatalog";
@@ -84,8 +88,9 @@ function parseStorySource(absolutePath: string, source: string) {
 
 function propertyName(node: ts.ObjectLiteralElementLike): string | null {
   if (!("name" in node) || !node.name) return null;
-  if (ts.isIdentifier(node.name) || ts.isStringLiteral(node.name))
+  if (ts.isIdentifier(node.name) || ts.isStringLiteral(node.name)) {
     return node.name.text;
+  }
   return null;
 }
 
@@ -493,7 +498,9 @@ function validateSvelteSourceObjects(
           rule: context.config.ruleIds.storybookCatalog,
           file,
           line,
-          message: `Storybook renders language "${language[1]}" without syntax tokens; use "tsx" for Svelte component markup`,
+          message: `Storybook renders language "${
+            language[1]
+          }" without syntax tokens; use "tsx" for Svelte component markup`,
         }),
       );
     }
@@ -588,7 +595,9 @@ function validateMdxLanguages(
             rule: context.config.ruleIds.storybookCatalog,
             file: relative,
             line: source.slice(0, match.index ?? 0).split(/\r?\n/).length,
-            message: `Storybook renders language "${match[1]}" without syntax tokens; use "tsx" for Svelte component markup`,
+            message: `Storybook renders language "${
+              match[1]
+            }" without syntax tokens; use "tsx" for Svelte component markup`,
           }),
         );
       }
@@ -667,8 +676,9 @@ export function validate(context: ValidationContext) {
         lineOffset,
       );
     }
-    if (localSources.length || svelteSources.length || importedSources.length)
+    if (localSources.length || svelteSources.length || importedSources.length) {
       continue;
+    }
     findings.push(
       diagnostic({
         code: "SPEC-STORY-SOURCE-MISSING",

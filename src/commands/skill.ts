@@ -1,9 +1,12 @@
-import { copyFileSync, existsSync, mkdirSync } from "node:fs";
-import os from "node:os";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
 import { UsageError } from "../argv.js";
+import {
+  copyFileSync,
+  existsSync,
+  fileURLToPath,
+  mkdirSync,
+  os,
+  path,
+} from "../platform/current.js";
 import type { Reporter } from "../reporter.js";
 
 export function skillSourcePath(): string {

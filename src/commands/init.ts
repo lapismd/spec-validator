@@ -1,25 +1,20 @@
+import { assertCommandArgs, hasFlag, readFlag, UsageError } from "../argv.js";
+import { findConfigPath } from "../config.js";
+import {
+  DENO_TASKS,
+  PACKAGE_SCRIPT_ALIASES,
+  renderDenoVersionCheck,
+} from "../deno-contract.js";
 import {
   existsSync,
   mkdirSync,
-  readFileSync,
+  path,
   readdirSync,
+  readFileSync,
   writeFileSync,
-} from "node:fs";
-import path from "node:path";
-
-import { assertCommandArgs, hasFlag, readFlag, UsageError } from "../argv.js";
-import { findConfigPath } from "../config.js";
+} from "../platform/current.js";
 import type { Reporter } from "../reporter.js";
 import { installSkill } from "./skill.js";
-
-const SCRIPT_ALIASES: Record<string, string> = {
-  "spec:validate": "spec-validator validate",
-  "spec:check": "spec-validator check",
-  "spec:first": "spec-validator first",
-  "spec:build": "spec-validator build",
-  "spec:search": "spec-validator search",
-  "spec:index": "spec-validator index",
-};
 
 function specSources(repoRoot: string): string {
   const directory = path.join(repoRoot, "spec/src");
@@ -120,13 +115,44 @@ function ensureIgnore(repoRoot: string, line: string): boolean {
   const current = existsSync(ignorePath)
     ? readFileSync(ignorePath, "utf8")
     : "";
-  if (current.split(/\r?\n/).some((entry) => entry.trim() === line))
+  if (current.split(/\r?\n/).some((entry) => entry.trim() === line)) {
     return false;
+  }
   writeFileSync(
     ignorePath,
     `${current.endsWith("\n") || !current ? current : `${current}\n`}${line}\n`,
   );
   return true;
+}
+
+function ensureDenoContract(repoRoot: string): string[] {
+  const written: string[] = [];
+  const denoPath = path.join(repoRoot, "deno.json");
+  const denoConfig = existsSync(denoPath)
+    ? (JSON.parse(readFileSync(denoPath, "utf8")) as {
+        tasks?: Record<string, string>;
+      })
+    : {};
+  denoConfig.tasks ??= {};
+  let denoChanged = !existsSync(denoPath);
+  for (const [name, command] of Object.entries(DENO_TASKS)) {
+    if (denoConfig.tasks[name]) continue;
+    denoConfig.tasks[name] = command;
+    denoChanged = true;
+  }
+  if (denoChanged) {
+    writeFileSync(denoPath, `${JSON.stringify(denoConfig, null, 2)}\n`);
+    written.push("deno.json");
+  }
+  if (
+    writeIfMissing(
+      path.join(repoRoot, "scripts/check-deno-version.ts"),
+      renderDenoVersionCheck(),
+    )
+  ) {
+    written.push("scripts/check-deno-version.ts");
+  }
+  return written;
 }
 
 export function initCommand(
@@ -186,6 +212,7 @@ export function initCommand(
     written.push("spec/src/verification.md");
   }
   if (ensureIgnore(repoRoot, "spec/book/")) written.push(".gitignore");
+  written.push(...ensureDenoContract(repoRoot));
 
   const packagePath = path.join(repoRoot, "package.json");
   if (existsSync(packagePath)) {
@@ -194,7 +221,7 @@ export function initCommand(
     };
     manifest.scripts ??= {};
     let changed = false;
-    for (const [name, script] of Object.entries(SCRIPT_ALIASES)) {
+    for (const [name, script] of Object.entries(PACKAGE_SCRIPT_ALIASES)) {
       if (manifest.scripts[name]) continue;
       manifest.scripts[name] = script;
       changed = true;
@@ -209,7 +236,9 @@ export function initCommand(
     version: 1,
     ok: true,
     exitCode: 0,
-    message: `Initialized ${profile ?? "detected"} profile. Wrote ${written.join(", ") || "no new files"}.`,
+    message: `Initialized ${profile ?? "detected"} profile. Wrote ${
+      written.join(", ") || "no new files"
+    }.`,
   });
   return 0;
 }

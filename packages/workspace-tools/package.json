@@ -1,0 +1,17 @@
+{
+  "name": "@lapismd/workspace-tools",
+  "version": "0.1.0",
+  "description": "Deno-first source linker and task graph for colocated LapisMD repositories.",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "lapismd-workspace": "./src/cli.ts"
+  },
+  "exports": {
+    ".": {
+      "deno": "./src/mod.ts",
+      "types": "./src/mod.ts",
+      "default": "./src/mod.ts"
+    }
+  }
+}

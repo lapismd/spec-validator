@@ -1,9 +1,7 @@
-import path from "node:path";
-import { pathToFileURL } from "node:url";
-
 import { loadResolvedConfig, resolveDiagnosticRule } from "../config.js";
 import { createValidationContext } from "../context.js";
 import { compareDiagnostics, diagnostic } from "../diagnostics.js";
+import { path, pathToFileURL } from "../platform/current.js";
 import type { Reporter } from "../reporter.js";
 import type { Diagnostic, ResolvedConfig, Validator } from "../types.js";
 import {
