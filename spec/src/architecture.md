@@ -62,7 +62,7 @@ The repository is Deno-first while publishing a Node-compatible CLI and TypeScri
 
 ### Acceptance details
 
-- The root MUST contain one `deno.json` and one `deno.lock`, use automatic isolated `node_modules`, reject any other Deno version through a canonical version-check task, and validate the built npm surface with `publint`.
+- The root MUST contain one `deno.json` and one `deno.lock`, use manually installed isolated `node_modules`, reject any other Deno version through a canonical version-check task, and validate the built npm surface with `publint`.
 - `deno ci` MUST reproduce dependencies from the frozen lock before validation.
 - Active repository tasks and guidance MUST invoke Deno rather than pnpm or Turbo; package lifecycle scripts MAY delegate to canonical Deno tasks.
 - First-party Deno automation MUST use Deno or Web APIs; Node APIs MUST stay in explicit npm compatibility adapters and tests.

@@ -1,6 +1,6 @@
 {
   "workspace": ["./packages/workspace-tools"],
-  "nodeModulesDir": "auto",
+  "nodeModulesDir": "manual",
   "nodeModulesLinker": "isolated",
   "allowScripts": ["npm:better-sqlite3", "npm:esbuild", "npm:node-llama-cpp"],
   "fmt": {

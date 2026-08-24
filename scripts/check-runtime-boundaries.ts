@@ -75,9 +75,21 @@ for (const active of ["package.json", "AGENTS.md", "README.md"]) {
 
 const config = JSON.parse(
   Deno.readTextFileSync(resolve(repositoryRoot, "deno.json")),
-) as { tasks?: Record<string, string> };
+) as {
+  nodeModulesDir?: string;
+  nodeModulesLinker?: string;
+  tasks?: Record<string, string>;
+};
 if (!config.tasks?.["version:check"]) {
   findings.push("deno.json: version:check task is missing");
+}
+if (
+  config.nodeModulesDir !== "manual" ||
+  config.nodeModulesLinker !== "isolated"
+) {
+  findings.push(
+    "deno.json: node_modules must use manual installation with the isolated linker",
+  );
 }
 
 if (findings.length > 0) {
