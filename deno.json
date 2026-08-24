@@ -2,11 +2,10 @@
   "name": "@lapismd/spec-validator",
   "version": "0.1.0",
   "exports": {
-    ".": "./src/index.deno.ts",
-    "./cli": "./src/cli.deno.ts"
+    ".": "./dist/deno/index.js",
+    "./cli": "./dist/deno/cli.js"
   },
   "workspace": ["./packages/workspace-tools"],
-  "links": [],
   "nodeModulesDir": "manual",
   "nodeModulesLinker": "isolated",
   "allowScripts": ["npm:better-sqlite3", "npm:esbuild", "npm:node-llama-cpp"],

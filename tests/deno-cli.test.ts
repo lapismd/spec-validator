@@ -23,3 +23,20 @@ Deno.test(
     );
   },
 );
+
+Deno.test("Deno package name resolves the built portable entry point", () => {
+  const result = new Deno.Command("deno", {
+    args: [
+      "eval",
+      'await import("@lapismd/spec-validator"); console.log("package import passed")',
+    ],
+    cwd: Deno.cwd(),
+    stdout: "piped",
+    stderr: "piped",
+  }).outputSync();
+  const stdout = new TextDecoder().decode(result.stdout);
+  const stderr = new TextDecoder().decode(result.stderr);
+  assert(result.success, `Deno package import failed: ${stderr || stdout}`);
+  assert(stdout.includes("package import passed"), stdout);
+  assert(!stderr.includes('"links" field'), stderr);
+});
