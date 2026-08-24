@@ -64,5 +64,5 @@ The repository is Deno-first while publishing a Node-compatible CLI and TypeScri
 
 - The root MUST contain one `deno.json` and one `deno.lock`, use manually installed isolated `node_modules`, reject any other Deno version through a canonical version-check task, and validate the built npm surface with `publint`.
 - `deno ci` MUST reproduce dependencies from the frozen lock before validation.
-- Active repository tasks and guidance MUST invoke Deno rather than pnpm or Turbo; package lifecycle scripts MAY delegate to canonical Deno tasks.
+- Cross-repository orchestration MUST use the versioned workspace schema, explicit dependency directions, build freshness checks, and content-addressed invalidation for declared deterministic tasks; active repository tasks and guidance MUST invoke Deno rather than pnpm or Turbo, while package lifecycle scripts MAY delegate to canonical Deno tasks.
 - First-party Deno automation MUST use Deno or Web APIs; Node APIs MUST stay in explicit npm compatibility adapters and tests.

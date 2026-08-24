@@ -1,5 +1,12 @@
 {
+  "name": "@lapismd/spec-validator",
+  "version": "0.1.0",
+  "exports": {
+    ".": "./src/index.deno.ts",
+    "./cli": "./src/cli.deno.ts"
+  },
   "workspace": ["./packages/workspace-tools"],
+  "links": [],
   "nodeModulesDir": "manual",
   "nodeModulesLinker": "isolated",
   "allowScripts": ["npm:better-sqlite3", "npm:esbuild", "npm:node-llama-cpp"],
@@ -12,7 +19,7 @@
     "ci": "deno task version:check && deno ci",
     "workspace:check": "deno run --no-prompt --allow-read ./packages/workspace-tools/src/cli.ts links check",
     "workspace:sync": "deno run --no-prompt --allow-read --allow-write ./packages/workspace-tools/src/cli.ts links sync",
-    "workspace:run": "deno run --no-prompt --allow-read --allow-run --allow-env --allow-sys ./packages/workspace-tools/src/cli.ts run",
+    "workspace:run": "deno run --no-prompt --allow-read --allow-write=.deno --allow-run --allow-env --allow-sys ./packages/workspace-tools/src/cli.ts run",
     "workspace:pack": "deno run --no-prompt --allow-read --allow-write ./packages/workspace-tools/src/cli.ts pack",
     "build:node": "deno task version:check && deno run --no-prompt --allow-read --allow-write=./dist ./scripts/clean-node-output.ts && tsc -p tsconfig.node-build.json && deno run --no-prompt --allow-read=./dist --allow-write=./dist ./scripts/prepare-cli-bin.ts",
     "build:deno": "deno bundle --unstable-sloppy-imports --external=typescript --external=jiti --check --sourcemap=linked --output ./dist/deno/index.js ./src/index.deno.ts && deno bundle --unstable-sloppy-imports --external=typescript --external=jiti --check --sourcemap=linked --output ./dist/deno/cli.js ./src/cli.deno.ts",

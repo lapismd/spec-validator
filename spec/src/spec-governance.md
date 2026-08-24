@@ -63,12 +63,11 @@ Specification changes precede or accompany protected implementation. Updating an
 
 ## SV-GOV-005 — Generated artifacts
 
-**Requirement.** Generated mdBook output under `spec/book/` and generated QMD databases MUST remain untracked, and the ignore rules MUST stay committed.
+**Requirement.** Generated mdBook output, QMD databases, and Deno workspace-task cache state MUST remain untracked, and the ignore rules MUST stay committed.
 
 ### Acceptance details
 
-- `.gitignore` MUST contain `spec/book/`.
-- `.gitignore` MUST contain `.qmd/index.sqlite*` when QMD is enabled.
+- `.gitignore` MUST contain `spec/book/`, `.deno/`, and `.qmd/index.sqlite*` when QMD is enabled.
 - Tracked files under `spec/book/` MUST fail the book validator.
 - Doctor `--fix` MAY append missing ignore lines and MUST NOT invent requirement IDs.
 

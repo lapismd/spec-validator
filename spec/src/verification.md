@@ -13,7 +13,7 @@
 | SV-ARCH-002 | Implemented | `src/tracked-files.ts`                                                         |
 | SV-ARCH-003 | Implemented | `src/types.ts`; `src/commands/validate.ts`                                     |
 | SV-ARCH-004 | Implemented | `deno.json` lifecycle allowlist; package manifest checks                       |
-| SV-ARCH-005 | Implemented | `deno.json`; manual-install, exact-version, and source audits; frozen Deno CI   |
+| SV-ARCH-005 | Implemented | `deno.json`; manual-install, exact-version, and source audits; frozen Deno CI  |
 | SV-CFG-001  | Implemented | `src/config.ts`; neutral profiles; five consumer configs                       |
 | SV-CFG-002  | Implemented | `src/config.ts`; `src/commands/validate.ts`                                    |
 | SV-CFG-003  | Implemented | diagnostic and reference resolution config tests                               |
@@ -30,7 +30,7 @@
 | SV-QMD-001  | Implemented | `src/commands/search.ts`; `.qmd/index.yml`                                     |
 | SV-QMD-002  | Implemented | `src/commands/search.ts` fallback and native-binding classification            |
 | SV-SKL-001  | Implemented | `src/commands/skill.ts`; `skill/spec-validator/SKILL.md`                       |
-| SV-WORK-001 | Implemented | `lapismd-workspace.json`; workspace config parser tests                        |
-| SV-WORK-002 | Implemented | link validation, ownership, and synchronization tests                          |
-| SV-WORK-003 | Implemented | task graph ordering, filtering, and cycle tests                                |
+| SV-WORK-001 | Implemented | schema v2, fixtures, native `deno.json.links`, and parser tests                |
+| SV-WORK-002 | Implemented | native-link, freshness, symlink-boundary, ownership, and sync tests            |
+| SV-WORK-003 | Implemented | ordering, filters, dependent closure, cycles, and cache invalidation tests     |
 | SV-WORK-004 | Implemented | staged manifest portability tests                                              |

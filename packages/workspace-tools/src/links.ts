@@ -82,7 +82,9 @@ function createLink(
 }
 
 export function syncWorkspaceLinks(repoRoot: string): LinkState {
-  const links = validateWorkspaceLinks(repoRoot);
+  const links = validateWorkspaceLinks(repoRoot).filter(
+    (link) => link.declaration.direction === "dependency",
+  );
   const nodeModules = resolve(repoRoot, "node_modules");
   Deno.mkdirSync(nodeModules, { recursive: true });
   const previousState = readState(repoRoot);

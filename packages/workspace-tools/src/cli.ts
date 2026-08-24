@@ -12,7 +12,7 @@ function usage(): string {
     "Usage:",
     "  lapismd-workspace links check [--root <path>]",
     "  lapismd-workspace links sync [--root <path>]",
-    "  lapismd-workspace run <task> [--root <path>] [--filter <glob>] [--include-dependencies] [--include-dependents]",
+    "  lapismd-workspace run <task> [--root <path>] [--filter <glob>] [--include-dependencies] [--include-dependents] [--no-cache]",
     "  lapismd-workspace pack --package-json <path> --output <path> [--root <path>]",
   ].join("\n");
 }
@@ -38,10 +38,9 @@ export async function main(input = Deno.args): Promise<number> {
       if (args.length > 0 || (action !== "check" && action !== "sync")) {
         throw new Error(usage());
       }
-      const links =
-        action === "check"
-          ? validateWorkspaceLinks(root)
-          : syncWorkspaceLinks(root).entries;
+      const links = action === "check"
+        ? validateWorkspaceLinks(root)
+        : syncWorkspaceLinks(root).entries;
       console.log(
         `${action} passed: ${links.length} link entr${
           links.length === 1 ? "y" : "ies"
@@ -54,15 +53,19 @@ export async function main(input = Deno.args): Promise<number> {
       const filter = takeOption(args, "--filter");
       const includeDependencies = args.includes("--include-dependencies");
       const includeDependents = args.includes("--include-dependents");
+      const cache = !args.includes("--no-cache");
       const remaining = args.filter(
         (arg) =>
-          arg !== "--include-dependencies" && arg !== "--include-dependents",
+          arg !== "--include-dependencies" &&
+          arg !== "--include-dependents" &&
+          arg !== "--no-cache",
       );
       if (!task || remaining.length > 0) throw new Error(usage());
       await runWorkspaceTask(root, task, {
         filter,
         includeDependencies,
         includeDependents,
+        cache,
       });
       return 0;
     }

@@ -2,6 +2,7 @@ export {
   loadWorkspaceDeclaration,
   parseWorkspaceDeclaration,
   satisfiesRange,
+  validateNativeDenoLinks,
   validateWorkspaceLinks,
   workspaceConfigName,
 } from "./config.ts";

@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 2,
+  "repository": {
+    "name": "consumer",
+    "packages": ["@example/consumer"],
+    "workspaceRoot": "..",
+    "tasks": {}
+  },
+  "links": [],
+  "unsafe": true
+}

@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lapis.md/schemas/lapismd-workspace.v2.schema.json",
+  "title": "LapisMD sibling workspace declaration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "repository", "links"],
+  "properties": {
+    "schemaVersion": { "const": 2 },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "packages", "workspaceRoot", "tasks"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "packages": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "workspaceRoot": { "type": "string", "minLength": 1 },
+        "tasks": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/task" }
+        }
+      }
+    },
+    "links": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/link" }
+    }
+  },
+  "$defs": {
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "not": { "pattern": "^(?:/|[A-Za-z]:[\\\\/])" }
+    },
+    "stringSet": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "build": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["task", "inputs", "outputs"],
+      "properties": {
+        "task": {
+          "anyOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "null" }
+          ]
+        },
+        "inputs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/relativePath" },
+          "uniqueItems": true
+        },
+        "outputs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/relativePath" },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inputs", "outputs"],
+      "properties": {
+        "inputs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/relativePath" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "outputs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/relativePath" },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "link": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "path",
+        "revision",
+        "range",
+        "direction",
+        "requiredExports",
+        "build"
+      ],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "path": { "$ref": "#/$defs/relativePath" },
+        "revision": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "range": { "type": "string", "minLength": 1 },
+        "direction": { "enum": ["dependency", "dependent"] },
+        "requiredExports": { "$ref": "#/$defs/stringSet" },
+        "build": { "$ref": "#/$defs/build" }
+      }
+    }
+  }
+}

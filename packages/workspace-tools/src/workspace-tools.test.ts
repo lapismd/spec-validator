@@ -35,6 +35,16 @@ function assertThrows(action: () => unknown, pattern: RegExp): void {
   throw new Error(`expected action to throw ${pattern}`);
 }
 
+function assertMissing(path: string): void {
+  try {
+    Deno.lstatSync(path);
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) return;
+    throw error;
+  }
+  throw new Error(`expected ${path} to be missing`);
+}
+
 async function assertRejects(
   action: () => Promise<unknown>,
   pattern: RegExp,
@@ -54,6 +64,65 @@ function writeJson(path: string, value: unknown): void {
   Deno.writeTextFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
 }
 
+function readFixture(name: string): unknown {
+  return JSON.parse(
+    Deno.readTextFileSync(new URL(`../fixtures/${name}`, import.meta.url)),
+  );
+}
+
+function buildTasks() {
+  return {
+    build: {
+      inputs: ["src"],
+      outputs: ["dist/index.js"],
+    },
+  };
+}
+
+function dependencyPaths(links: unknown[]): string[] {
+  return links.flatMap((link) => {
+    if (!link || typeof link !== "object" || Array.isArray(link)) return [];
+    const value = link as Record<string, unknown>;
+    return value.direction === "dependency" && typeof value.path === "string"
+      ? [value.path]
+      : [];
+  });
+}
+
+function writeRepositoryContract(
+  root: string,
+  name: string,
+  packageName: string,
+  links: unknown[],
+  workspaceRoot = "..",
+): void {
+  let denoConfig: Record<string, unknown> = {};
+  try {
+    denoConfig = JSON.parse(
+      Deno.readTextFileSync(resolve(root, "deno.json")),
+    ) as Record<string, unknown>;
+  } catch (error) {
+    if (!(error instanceof Deno.errors.NotFound)) throw error;
+  }
+  writeJson(resolve(root, "deno.json"), {
+    ...denoConfig,
+    name: packageName,
+    version: "1.2.3",
+    exports: { ".": "./src/index.ts" },
+    links: dependencyPaths(links),
+  });
+  writeJson(resolve(root, "lapismd-workspace.json"), {
+    schemaVersion: 2,
+    repository: {
+      name,
+      packages: [packageName],
+      workspaceRoot,
+      tasks: buildTasks(),
+    },
+    links,
+  });
+}
+
 function createRepository(
   root: string,
   name: string,
@@ -69,17 +138,11 @@ function createRepository(
     bin: { [name]: "./dist/cli.js" },
   });
   Deno.mkdirSync(resolve(root, "dist"), { recursive: true });
+  Deno.mkdirSync(resolve(root, "src"), { recursive: true });
+  Deno.writeTextFileSync(resolve(root, "src/index.ts"), "export {};\n");
   Deno.writeTextFileSync(resolve(root, "dist/index.js"), "export {};\n");
   Deno.writeTextFileSync(resolve(root, "dist/cli.js"), "#!/usr/bin/env node\n");
-  writeJson(resolve(root, "lapismd-workspace.json"), {
-    schemaVersion: 1,
-    repository: {
-      name,
-      packages: [packageName],
-      workspaceRoot: "..",
-    },
-    links,
-  });
+  writeRepositoryContract(root, name, packageName, links);
 }
 
 function providerLink(path = "../provider") {
@@ -88,22 +151,37 @@ function providerLink(path = "../provider") {
     path,
     revision: "0123456789abcdef0123456789abcdef01234567",
     range: "^1.2.0",
+    direction: "dependency",
     requiredExports: ["."],
-    requiredFiles: ["dist/index.js"],
+    build: {
+      task: null,
+      inputs: [],
+      outputs: ["dist/index.js"],
+    },
   };
 }
 
 Deno.test(
   "workspace declarations reject unknown fields and duplicate links",
   () => {
+    assertEquals(
+      parseWorkspaceDeclaration(readFixture("valid.json")).schemaVersion,
+      2,
+    );
+    assertThrows(
+      () =>
+        parseWorkspaceDeclaration(readFixture("invalid-unknown-field.json")),
+      /unknown field/u,
+    );
     assertThrows(
       () =>
         parseWorkspaceDeclaration({
-          schemaVersion: 1,
+          schemaVersion: 2,
           repository: {
             name: "consumer",
             packages: ["@test/consumer"],
             workspaceRoot: "..",
+            tasks: {},
           },
           links: [],
           surprise: true,
@@ -113,11 +191,12 @@ Deno.test(
     assertThrows(
       () =>
         parseWorkspaceDeclaration({
-          schemaVersion: 1,
+          schemaVersion: 2,
           repository: {
             name: "consumer",
             packages: ["@test/consumer"],
             workspaceRoot: "..",
+            tasks: {},
           },
           links: [providerLink(), providerLink()],
         }),
@@ -146,18 +225,131 @@ Deno.test(
         ["@test/provider"],
       );
 
-      writeJson(resolve(consumer, "lapismd-workspace.json"), {
-        schemaVersion: 1,
-        repository: {
-          name: "consumer",
-          packages: ["@test/consumer"],
-          workspaceRoot: ".",
-        },
-        links: [providerLink()],
+      const consumerDeno = JSON.parse(
+        Deno.readTextFileSync(resolve(consumer, "deno.json")),
+      );
+      writeJson(resolve(consumer, "deno.json"), {
+        ...consumerDeno,
+        links: [],
       });
       assertThrows(
         () => validateWorkspaceLinks(consumer),
+        /links is missing declared dependency/u,
+      );
+      writeJson(resolve(consumer, "deno.json"), {
+        ...consumerDeno,
+        links: ["../provider", "../undeclared"],
+      });
+      assertThrows(
+        () => validateWorkspaceLinks(consumer),
+        /links contains undeclared target/u,
+      );
+      writeJson(resolve(consumer, "deno.json"), consumerDeno);
+
+      const providerDeno = JSON.parse(
+        Deno.readTextFileSync(resolve(provider, "deno.json")),
+      );
+      writeJson(resolve(provider, "deno.json"), {
+        ...providerDeno,
+        name: "@test/wrong-provider",
+      });
+      assertThrows(
+        () => validateWorkspaceLinks(consumer),
+        /target Deno package declares/u,
+      );
+      writeJson(resolve(provider, "deno.json"), {
+        ...providerDeno,
+        exports: { "./other": "./src/index.ts" },
+      });
+      assertThrows(
+        () => validateWorkspaceLinks(consumer),
+        /Deno package is missing required export/u,
+      );
+      writeJson(resolve(provider, "deno.json"), providerDeno);
+
+      Deno.removeSync(resolve(provider, "dist/index.js"));
+      assertThrows(
+        () => validateWorkspaceLinks(consumer),
+        /build output is missing/u,
+      );
+      Deno.writeTextFileSync(
+        resolve(provider, "dist/index.js"),
+        "export {};\n",
+      );
+
+      Deno.removeSync(resolve(provider, "dist/cli.js"));
+      assertThrows(
+        () => validateWorkspaceLinks(consumer),
+        /bin provider is missing/u,
+      );
+      Deno.writeTextFileSync(
+        resolve(provider, "dist/cli.js"),
+        "#!/usr/bin/env node\n",
+      );
+
+      const providerManifest = JSON.parse(
+        Deno.readTextFileSync(resolve(provider, "package.json")),
+      );
+      writeJson(resolve(provider, "package.json"), {
+        ...providerManifest,
+        name: "@test/wrong-provider",
+      });
+      assertThrows(
+        () => validateWorkspaceLinks(consumer),
+        /target declares package/u,
+      );
+      writeJson(resolve(provider, "package.json"), providerManifest);
+
+      writeJson(resolve(provider, "package.json"), {
+        ...providerManifest,
+        exports: { "./other": "./dist/index.js" },
+      });
+      assertThrows(
+        () => validateWorkspaceLinks(consumer),
+        /missing required export/u,
+      );
+      writeJson(resolve(provider, "package.json"), providerManifest);
+
+      writeRepositoryContract(
+        consumer,
+        "consumer",
+        "@test/consumer",
+        [providerLink("../missing")],
+      );
+      assertThrows(
+        () => validateWorkspaceLinks(consumer),
+        /target is missing/u,
+      );
+
+      writeRepositoryContract(
+        consumer,
+        "consumer",
+        "@test/consumer",
+        [providerLink()],
+        ".",
+      );
+      assertThrows(
+        () => validateWorkspaceLinks(consumer),
         /escapes workspace root/u,
+      );
+
+      writeRepositoryContract(consumer, "consumer", "@test/consumer", [
+        {
+          ...providerLink(),
+          build: {
+            task: "build",
+            inputs: ["src"],
+            outputs: ["dist/index.js"],
+          },
+        },
+      ]);
+      Deno.mkdirSync(resolve(provider, "src"), { recursive: true });
+      Deno.writeTextFileSync(resolve(provider, "src/index.ts"), "export {};\n");
+      const future = new Date(Date.now() + 10_000);
+      Deno.utimeSync(resolve(provider, "src/index.ts"), future, future);
+      assertThrows(
+        () => validateWorkspaceLinks(consumer),
+        /build output is stale/u,
       );
     } finally {
       Deno.removeSync(workspace, { recursive: true });
@@ -188,7 +380,23 @@ Deno.test(
           .isSymlink,
       );
 
-      Deno.removeSync(resolve(consumer, "node_modules/@test/provider"));
+      writeRepositoryContract(
+        consumer,
+        "consumer",
+        "@test/consumer",
+        [],
+      );
+      syncWorkspaceLinks(consumer);
+      assertMissing(resolve(consumer, "node_modules/@test/provider"));
+      assertMissing(resolve(consumer, "node_modules/.bin/provider"));
+
+      writeRepositoryContract(
+        consumer,
+        "consumer",
+        "@test/consumer",
+        [providerLink()],
+      );
+
       Deno.mkdirSync(resolve(consumer, "node_modules/@test/provider"), {
         recursive: true,
       });
@@ -254,7 +462,7 @@ Deno.test(
         providerLink(),
       ]);
       const graph = buildWorkspaceGraph(consumer);
-      assertEquals([...graph.nodes.keys()], ["provider", "consumer"]);
+      assertEquals([...graph.nodes.keys()].sort(), ["consumer", "provider"]);
       const visited: string[] = [];
       await runWorkspaceTask(
         consumer,
@@ -267,24 +475,40 @@ Deno.test(
       );
       assertEquals(visited, ["provider", "consumer"]);
 
-      writeJson(resolve(provider, "lapismd-workspace.json"), {
-        schemaVersion: 1,
-        repository: {
-          name: "provider",
-          packages: ["@test/provider"],
-          workspaceRoot: "..",
+      writeRepositoryContract(provider, "provider", "@test/provider", [
+        {
+          ...providerLink("../consumer"),
+          name: "@test/consumer",
+          direction: "dependent",
         },
-        links: [
-          {
-            name: "@test/consumer",
-            path: "../consumer",
-            revision: "0123456789abcdef0123456789abcdef01234567",
-            range: "^1.2.0",
-            requiredExports: ["."],
-            requiredFiles: ["dist/index.js"],
+      ]);
+      const dependentVisited: string[] = [];
+      await runWorkspaceTask(
+        provider,
+        "check",
+        { filter: "provider", includeDependents: true },
+        (node) => {
+          dependentVisited.push(node.name);
+          return 0;
+        },
+      );
+      assertEquals(dependentVisited, ["provider", "consumer"]);
+
+      writeRepositoryContract(provider, "provider", "@test/provider", [
+        {
+          name: "@test/consumer",
+          path: "../consumer",
+          revision: "0123456789abcdef0123456789abcdef01234567",
+          range: "^1.2.0",
+          direction: "dependency",
+          requiredExports: ["."],
+          build: {
+            task: null,
+            inputs: [],
+            outputs: ["dist/index.js"],
           },
-        ],
-      });
+        },
+      ]);
       await assertRejects(
         () =>
           runWorkspaceTask(consumer, "check", { includeDependencies: true }),
@@ -295,3 +519,31 @@ Deno.test(
     }
   },
 );
+
+Deno.test("workspace task cache invalidates when declared inputs change", async () => {
+  const workspace = Deno.makeTempDirSync();
+  try {
+    const repository = resolve(workspace, "repository");
+    createRepository(repository, "repository", "@test/repository");
+    let runs = 0;
+    const runner = () => {
+      runs += 1;
+      return 0;
+    };
+    await runWorkspaceTask(repository, "build", {}, runner);
+    await runWorkspaceTask(repository, "build", {}, runner);
+    assertEquals(runs, 1);
+
+    Deno.writeTextFileSync(
+      resolve(repository, "src/index.ts"),
+      "export const changed = true;\n",
+    );
+    await runWorkspaceTask(repository, "build", {}, runner);
+    assertEquals(runs, 2);
+
+    await runWorkspaceTask(repository, "build", { cache: false }, runner);
+    assertEquals(runs, 3);
+  } finally {
+    Deno.removeSync(workspace, { recursive: true });
+  }
+});

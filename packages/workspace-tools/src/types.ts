@@ -1,9 +1,16 @@
-export const WORKSPACE_SCHEMA_VERSION = 1 as const;
+export const WORKSPACE_SCHEMA_VERSION = 2 as const;
 
 export interface RepositoryDeclaration {
   name: string;
   packages: string[];
   workspaceRoot: string;
+  tasks: Record<
+    string,
+    {
+      inputs: string[];
+      outputs: string[];
+    }
+  >;
 }
 
 export interface LinkDeclaration {
@@ -11,8 +18,13 @@ export interface LinkDeclaration {
   path: string;
   revision: string;
   range: string;
+  direction: "dependency" | "dependent";
   requiredExports: string[];
-  requiredFiles: string[];
+  build: {
+    task: string | null;
+    inputs: string[];
+    outputs: string[];
+  };
 }
 
 export interface WorkspaceDeclaration {

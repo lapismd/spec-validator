@@ -1,9 +1,21 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "repository": {
     "name": "spec-validator",
     "packages": ["@lapismd/spec-validator", "@lapismd/workspace-tools"],
-    "workspaceRoot": ".."
+    "workspaceRoot": "..",
+    "tasks": {
+      "build": {
+        "inputs": [
+          "src",
+          "scripts",
+          "packages/workspace-tools/src",
+          "package.json",
+          "deno.json"
+        ],
+        "outputs": ["dist/index.js", "dist/cli.js"]
+      }
+    }
   },
   "links": []
 }

@@ -20,7 +20,9 @@ export function createPortableManifest(
 ): PackageManifest {
   const declaration = loadWorkspaceDeclaration(repoRoot);
   const ranges = new Map(
-    declaration.links.map((link) => [link.name, link.range]),
+    declaration.links
+      .filter((link) => link.direction === "dependency")
+      .map((link) => [link.name, link.range]),
   );
   const output = structuredClone(sourceManifest);
   for (const section of DEPENDENCY_SECTIONS) {

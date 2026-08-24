@@ -5,6 +5,10 @@ orchestration for separately versioned sibling repositories. It does not turn
 the sibling checkouts into one workspace or replace their own locks.
 The package manifest exposes both its library surface and `./cli` so sibling
 declarations can validate the bootstrap entry point before synchronization.
+Deno resolves dependency-direction siblings through the tracked root
+`deno.json.links` list. The synchronizer complements that native resolution by
+materializing the package and binary links required by npm-compatible Node,
+Vite, Storybook, and publishing tools.
 Deno requires unscoped filesystem permission when creating symlinks, so the
 tool itself MUST enforce the declared workspace and `node_modules` boundaries
 before using that permission.
@@ -24,10 +28,10 @@ before using that permission.
 
 ### Acceptance details
 
-- Each link MUST declare a package name, relative target, full recorded commit ID for CI checkout, portable range, required exports, and required built files.
+- Each repository MUST declare cacheable tasks only when their input and output paths are deterministic; each link MUST declare a package name, relative target, full recorded commit ID for CI checkout, portable range, dependency direction, required exports, and a build contract with task, inputs, and outputs, while every dependency-direction target MUST also appear in the tracked root `deno.json.links` list.
+- The tracked JSON Schema and valid/invalid fixtures MUST describe the same fail-closed declaration contract as the runtime parser, including rejection of unknown fields, duplicate packages, invalid ranges, and malformed paths.
 - Relative targets MUST resolve inside the declared shared workspace root.
-- The package name and version read from the target manifest MUST satisfy the declaration before any task or mutation runs.
-- Unknown fields, duplicate packages, invalid ranges, and malformed paths MUST fail closed with an actionable diagnostic.
+- The package name, version, and required exports read from both the target npm manifest and its JSR-style `deno.json` package configuration MUST satisfy the declaration before any task or mutation runs.
 
 ## SV-WORK-002 — Link validation and synchronization
 
@@ -35,8 +39,8 @@ before using that permission.
 
 ### Acceptance details
 
-- `check` MUST be read-only, while `sync` MUST record owned entries beneath `node_modules` without changing tracked source.
-- Synchronization MUST refuse missing exports or build output, path escapes, target-name mismatches, and existing non-owned files or directories.
+- `check` MUST be read-only and reject missing or undeclared native Deno links, while `sync` MUST leave tracked `deno.json.links` unchanged and record only npm-compatibility entries beneath `node_modules`.
+- Synchronization MUST refuse missing exports, missing or stale build output, path escapes including symbolic-link escapes, target-name mismatches, and existing non-owned files or directories.
 - Stale owned symlinks MAY be removed only when they still point at the recorded target.
 - Repeated synchronization MUST be deterministic and idempotent.
 
@@ -46,10 +50,10 @@ before using that permission.
 
 ### Acceptance details
 
-- Filters MUST match repository or declared package names and MAY include dependencies or dependents explicitly.
+- Filters MUST match repository or declared package names and MAY include dependencies or explicitly declared dependents.
 - Cycles, missing configurations, missing tasks, and failed child commands MUST stop execution with a non-zero status.
-- Independent repositories MUST have deterministic ordering.
-- Every child command MUST run from the owning repository root.
+- Independent repositories MUST have deterministic ordering, and every child command MUST run from the owning repository root.
+- Declared deterministic tasks MUST reuse a content-addressed result only while every output exists and the declared input fingerprint is unchanged; `--no-cache` MUST force execution.
 
 ## SV-WORK-004 — Portable pack manifest
 

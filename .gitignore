@@ -1,4 +1,5 @@
 node_modules/
+.deno/
 dist/
 spec/book/
 .qmd/index.sqlite*

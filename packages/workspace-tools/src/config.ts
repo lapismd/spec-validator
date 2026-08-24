@@ -10,15 +10,27 @@ import {
 
 const CONFIG_NAME = "lapismd-workspace.json";
 const ROOT_KEYS = new Set(["schemaVersion", "repository", "links"]);
-const REPOSITORY_KEYS = new Set(["name", "packages", "workspaceRoot"]);
+const REPOSITORY_KEYS = new Set([
+  "name",
+  "packages",
+  "workspaceRoot",
+  "tasks",
+]);
 const LINK_KEYS = new Set([
   "name",
   "path",
   "revision",
   "range",
+  "direction",
   "requiredExports",
-  "requiredFiles",
+  "build",
 ]);
+const BUILD_KEYS = new Set(["task", "inputs", "outputs"]);
+const TASK_KEYS = new Set(["inputs", "outputs"]);
+
+interface DenoPackageConfiguration extends PackageManifest {
+  links?: string[];
+}
 
 function objectValue(value: unknown, label: string): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -64,13 +76,24 @@ function stringArray(value: unknown, label: string): string[] {
   return normalized;
 }
 
+function relativePathArray(value: unknown, label: string): string[] {
+  const paths = stringArray(value, label);
+  for (const [index, path] of paths.entries()) {
+    if (isAbsolute(path)) {
+      throw new Error(`${label}[${index}] must be relative`);
+    }
+  }
+  return paths;
+}
+
 function isPortableRange(range: string): boolean {
   if (/^(?:link|file|workspace|npm|jsr):/u.test(range) || isAbsolute(range)) {
     return false;
   }
-  return /^(?:\*|[~^]?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?|(?:[<>]=?\s*\d+\.\d+\.\d+)(?:\s+(?:[<>]=?\s*\d+\.\d+\.\d+))*)$/u.test(
-    range,
-  );
+  return /^(?:\*|[~^]?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?|(?:[<>]=?\s*\d+\.\d+\.\d+)(?:\s+(?:[<>]=?\s*\d+\.\d+\.\d+))*)$/u
+    .test(
+      range,
+    );
 }
 
 function parseVersion(version: string): [number, number, number] | null {
@@ -95,20 +118,19 @@ export function satisfiesRange(version: string, range: string): boolean {
   if (range.startsWith("^")) {
     const minimum = parseVersion(range.slice(1));
     if (!minimum || compareVersion(actual, minimum) < 0) return false;
-    const maximum: [number, number, number] =
-      minimum[0] > 0
-        ? [minimum[0] + 1, 0, 0]
-        : minimum[1] > 0
-          ? [0, minimum[1] + 1, 0]
-          : [0, 0, minimum[2] + 1];
+    const maximum: [number, number, number] = minimum[0] > 0
+      ? [minimum[0] + 1, 0, 0]
+      : minimum[1] > 0
+      ? [0, minimum[1] + 1, 0]
+      : [0, 0, minimum[2] + 1];
     return compareVersion(actual, maximum) < 0;
   }
   if (range.startsWith("~")) {
     const minimum = parseVersion(range.slice(1));
     return Boolean(
       minimum &&
-      compareVersion(actual, minimum) >= 0 &&
-      compareVersion(actual, [minimum[0], minimum[1] + 1, 0]) < 0,
+        compareVersion(actual, minimum) >= 0 &&
+        compareVersion(actual, [minimum[0], minimum[1] + 1, 0]) < 0,
     );
   }
   if (!range.startsWith(">") && !range.startsWith("<")) {
@@ -124,10 +146,10 @@ export function satisfiesRange(version: string, range: string): boolean {
     return match[1] === ">="
       ? compared >= 0
       : match[1] === "<="
-        ? compared <= 0
-        : match[1] === ">"
-          ? compared > 0
-          : compared < 0;
+      ? compared <= 0
+      : match[1] === ">"
+      ? compared > 0
+      : compared < 0;
   });
 }
 
@@ -145,6 +167,28 @@ export function parseWorkspaceDeclaration(
 
   const repositoryValue = objectValue(root.repository, `${source}.repository`);
   onlyKeys(repositoryValue, REPOSITORY_KEYS, `${source}.repository`);
+  const taskValues = objectValue(
+    repositoryValue.tasks,
+    `${source}.repository.tasks`,
+  );
+  const tasks = Object.fromEntries(
+    Object.entries(taskValues).map(([name, value]) => {
+      if (name.trim() === "" || name.startsWith("-")) {
+        throw new Error(
+          `${source}.repository.tasks contains invalid task ${name}`,
+        );
+      }
+      const label = `${source}.repository.tasks.${name}`;
+      const task = objectValue(value, label);
+      onlyKeys(task, TASK_KEYS, label);
+      const inputs = relativePathArray(task.inputs, `${label}.inputs`);
+      const outputs = relativePathArray(task.outputs, `${label}.outputs`);
+      if (inputs.length === 0 || outputs.length === 0) {
+        throw new Error(`${label} inputs and outputs must not be empty`);
+      }
+      return [name, { inputs, outputs }];
+    }),
+  );
   const repository = {
     name: stringValue(repositoryValue.name, `${source}.repository.name`),
     packages: stringArray(
@@ -155,6 +199,7 @@ export function parseWorkspaceDeclaration(
       repositoryValue.workspaceRoot,
       `${source}.repository.workspaceRoot`,
     ),
+    tasks,
   };
 
   if (!Array.isArray(root.links)) {
@@ -172,16 +217,43 @@ export function parseWorkspaceDeclaration(
     if (isAbsolute(target)) {
       throw new Error(`${label}.path must be relative`);
     }
+    if (link.direction !== "dependency" && link.direction !== "dependent") {
+      throw new Error(
+        `${label}.direction must be dependency or dependent`,
+      );
+    }
+    const buildValue = objectValue(link.build, `${label}.build`);
+    onlyKeys(buildValue, BUILD_KEYS, `${label}.build`);
+    const task = buildValue.task === null
+      ? null
+      : stringValue(buildValue.task, `${label}.build.task`);
+    const inputs = relativePathArray(
+      buildValue.inputs,
+      `${label}.build.inputs`,
+    );
+    const outputs = relativePathArray(
+      buildValue.outputs,
+      `${label}.build.outputs`,
+    );
+    if (outputs.length === 0) {
+      throw new Error(`${label}.build.outputs must not be empty`);
+    }
+    if (task !== null && inputs.length === 0) {
+      throw new Error(
+        `${label}.build.inputs must not be empty when a build task is declared`,
+      );
+    }
     return {
       name: stringValue(link.name, `${label}.name`),
       path: target,
       revision: stringValue(link.revision, `${label}.revision`),
       range,
+      direction: link.direction,
       requiredExports: stringArray(
         link.requiredExports,
         `${label}.requiredExports`,
       ),
-      requiredFiles: stringArray(link.requiredFiles, `${label}.requiredFiles`),
+      build: { task, inputs, outputs },
     };
   });
 
@@ -252,6 +324,24 @@ function readPackageManifest(path: string): PackageManifest {
   }
 }
 
+function readDenoPackageConfiguration(path: string): DenoPackageConfiguration {
+  const denoJson = resolve(path, "deno.json");
+  try {
+    return JSON.parse(
+      Deno.readTextFileSync(denoJson),
+    ) as DenoPackageConfiguration;
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) {
+      throw new Error(`missing Deno package configuration ${denoJson}`);
+    }
+    throw new Error(
+      `could not read Deno package configuration ${denoJson}: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+  }
+}
+
 function hasExport(manifest: PackageManifest, requiredExport: string): boolean {
   if (requiredExport === "." && !manifest.exports) {
     return (
@@ -261,8 +351,8 @@ function hasExport(manifest: PackageManifest, requiredExport: string): boolean {
   if (typeof manifest.exports === "string") return requiredExport === ".";
   return Boolean(
     manifest.exports &&
-    typeof manifest.exports === "object" &&
-    Object.hasOwn(manifest.exports, requiredExport),
+      typeof manifest.exports === "object" &&
+      Object.hasOwn(manifest.exports, requiredExport),
   );
 }
 
@@ -277,14 +367,105 @@ function normalizeBins(manifest: PackageManifest): Record<string, string> {
   return manifest.bin && typeof manifest.bin === "object" ? manifest.bin : {};
 }
 
+function newestMtime(path: string): number {
+  const info = Deno.statSync(path);
+  let newest = info.mtime?.getTime() ?? 0;
+  if (!info.isDirectory) return newest;
+  for (const entry of Deno.readDirSync(path)) {
+    newest = Math.max(newest, newestMtime(resolve(path, entry.name)));
+  }
+  return newest;
+}
+
+function validatePackagePath(
+  packageRoot: string,
+  relativePath: string,
+  label: string,
+): string {
+  const path = resolve(packageRoot, relativePath);
+  if (!withinBoundary(packageRoot, path)) {
+    throw new Error(`${label} escapes package root: ${relativePath}`);
+  }
+  let realPath: string;
+  try {
+    realPath = Deno.realPathSync(path);
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) {
+      throw new Error(`${label} is missing ${relativePath}`);
+    }
+    throw error;
+  }
+  const realRoot = Deno.realPathSync(packageRoot);
+  if (!withinBoundary(realRoot, realPath)) {
+    throw new Error(
+      `${label} escapes package root through a symlink: ${relativePath}`,
+    );
+  }
+  return path;
+}
+
+export function validateNativeDenoLinks(
+  repoRoot: string,
+  declaration = loadWorkspaceDeclaration(repoRoot),
+): void {
+  const denoJson = resolve(repoRoot, "deno.json");
+  const config = readDenoPackageConfiguration(repoRoot);
+  const actualPaths = relativePathArray(
+    config.links ?? [],
+    `${denoJson}.links`,
+  );
+  const actual = new Map<string, string>();
+  for (const path of actualPaths) {
+    const target = resolve(repoRoot, path);
+    if (actual.has(target)) {
+      throw new Error(`${denoJson}.links resolves duplicate target ${path}`);
+    }
+    actual.set(target, path);
+  }
+
+  const expected = new Map(
+    declaration.links
+      .filter((link) => link.direction === "dependency")
+      .map((link) => [resolve(repoRoot, link.path), link] as const),
+  );
+  for (const [target, link] of expected) {
+    if (!actual.has(target)) {
+      throw new Error(
+        `${denoJson}.links is missing declared dependency ${link.name} at ${link.path}`,
+      );
+    }
+  }
+  for (const [target, path] of actual) {
+    if (!expected.has(target)) {
+      throw new Error(`${denoJson}.links contains undeclared target ${path}`);
+    }
+  }
+}
+
 export function validateWorkspaceLinks(repoRoot: string): ValidatedLink[] {
   const declaration = loadWorkspaceDeclaration(repoRoot);
+  validateNativeDenoLinks(repoRoot, declaration);
   const boundary = resolve(repoRoot, declaration.repository.workspaceRoot);
   return declaration.links.map((link) => {
     const targetPath = resolve(repoRoot, link.path);
     if (!withinBoundary(boundary, targetPath)) {
       throw new Error(
         `${link.name} target escapes workspace root: ${link.path}`,
+      );
+    }
+    const realBoundary = Deno.realPathSync(boundary);
+    let realTarget: string;
+    try {
+      realTarget = Deno.realPathSync(targetPath);
+    } catch (error) {
+      if (error instanceof Deno.errors.NotFound) {
+        throw new Error(`${link.name} target is missing: ${link.path}`);
+      }
+      throw error;
+    }
+    if (!withinBoundary(realBoundary, realTarget)) {
+      throw new Error(
+        `${link.name} target escapes workspace root through a symlink: ${link.path}`,
       );
     }
     const manifest = readPackageManifest(targetPath);
@@ -295,9 +476,27 @@ export function validateWorkspaceLinks(repoRoot: string): ValidatedLink[] {
     }
     if (!manifest.version || !satisfiesRange(manifest.version, link.range)) {
       throw new Error(
-        `${link.name}@${String(
-          manifest.version,
-        )} does not satisfy ${link.range}`,
+        `${link.name}@${
+          String(
+            manifest.version,
+          )
+        } does not satisfy ${link.range}`,
+      );
+    }
+    const denoPackage = readDenoPackageConfiguration(targetPath);
+    if (denoPackage.name !== link.name) {
+      throw new Error(
+        `${link.name} target Deno package declares ${String(denoPackage.name)}`,
+      );
+    }
+    if (
+      !denoPackage.version ||
+      !satisfiesRange(denoPackage.version, link.range)
+    ) {
+      throw new Error(
+        `${link.name} Deno package ${
+          String(denoPackage.version)
+        } does not satisfy ${link.range}`,
       );
     }
     for (const requiredExport of link.requiredExports) {
@@ -306,17 +505,25 @@ export function validateWorkspaceLinks(repoRoot: string): ValidatedLink[] {
           `${link.name} is missing required export ${requiredExport}`,
         );
       }
+      if (!hasExport(denoPackage, requiredExport)) {
+        throw new Error(
+          `${link.name} Deno package is missing required export ${requiredExport}`,
+        );
+      }
     }
-    for (const requiredFile of link.requiredFiles) {
-      try {
-        Deno.statSync(resolve(targetPath, requiredFile));
-      } catch (error) {
-        if (error instanceof Deno.errors.NotFound) {
-          throw new Error(
-            `${link.name} is missing required file ${requiredFile}`,
-          );
-        }
-        throw error;
+    const outputPaths = link.build.outputs.map((output) =>
+      validatePackagePath(targetPath, output, `${link.name} build output`)
+    );
+    if (link.build.task !== null) {
+      const inputPaths = link.build.inputs.map((input) =>
+        validatePackagePath(targetPath, input, `${link.name} build input`)
+      );
+      const newestInput = Math.max(...inputPaths.map(newestMtime));
+      const newestOutput = Math.max(...outputPaths.map(newestMtime));
+      if (newestInput > newestOutput) {
+        throw new Error(
+          `${link.name} build output is stale; run deno task ${link.build.task} in ${targetPath}`,
+        );
       }
     }
     const bins = normalizeBins(manifest);

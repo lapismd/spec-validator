@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "repository": {
+    "name": "consumer",
+    "packages": ["@example/consumer"],
+    "workspaceRoot": "..",
+    "tasks": {
+      "build": {
+        "inputs": ["src", "package.json"],
+        "outputs": ["dist/index.js"]
+      }
+    }
+  },
+  "links": [
+    {
+      "name": "@example/provider",
+      "path": "../provider",
+      "revision": "0123456789abcdef0123456789abcdef01234567",
+      "range": "^1.2.0",
+      "direction": "dependency",
+      "requiredExports": ["."],
+      "build": {
+        "task": "build",
+        "inputs": ["src", "package.json"],
+        "outputs": ["dist/index.js"]
+      }
+    }
+  ]
+}
