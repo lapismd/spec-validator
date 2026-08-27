@@ -82,12 +82,12 @@ Specification changes precede or accompany protected implementation. Updating an
 - The guide MUST require `deno task spec:check` and `deno task build:node` before a verified commit.
 - README and skill text MUST NOT replace this guide as the implementation contract.
 
-## SV-GOV-007 — Sibling resolution
+## SV-GOV-007 — Published dependency policy
 
-**Requirement.** Tracked `AGENTS.md` MUST require colocated LapisMD siblings to resolve through the repository-owned Deno linker without becoming workspace members.
+**Requirement.** Tracked `AGENTS.md` MUST require published LapisMD package dependencies to resolve through registry ranges without vendored or checkout-specific dependency paths.
 
 ### Acceptance details
 
-- Source manifests MAY retain explicit `link:` dependencies for local resolution, but staged publish manifests MUST contain portable ranges without machine-specific sibling paths.
-- Agents MUST NOT vendor sibling source, mutate sibling `node_modules`, or replace a local checkout with a registry copy.
-- A sibling that exports built output MUST be rebuilt before consumer validation.
+- Publishable manifests must contain portable ranges without machine-specific paths.
+- Agents MUST NOT vendor dependency source, mutate dependency `node_modules`, or add checkout-specific dependency paths.
+- Dependency source fixes MUST be made in the owning repository and consumed through a released package version.

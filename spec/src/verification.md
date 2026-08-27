@@ -8,7 +8,7 @@
 | SV-GOV-004  | Implemented | `src/validators/spec-first.ts`; `src/commands/first.ts`                        |
 | SV-GOV-005  | Implemented | `src/validators/book.ts`; `src/validators/qmd.ts`; `.gitignore`                |
 | SV-GOV-006  | Implemented | `AGENTS.md`; `src/validators/governance.ts` extras                             |
-| SV-GOV-007  | Implemented | `AGENTS.md`; portable sibling dependency policy                                |
+| SV-GOV-007  | Implemented | `AGENTS.md`; portable published dependency policy                              |
 | SV-ARCH-001 | Implemented | `package.json` bin; linked-bin CLI regression; `src/config.ts`                 |
 | SV-ARCH-002 | Implemented | `src/tracked-files.ts`                                                         |
 | SV-ARCH-003 | Implemented | `src/types.ts`; `src/commands/validate.ts`                                     |

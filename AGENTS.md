@@ -30,16 +30,13 @@ A code-only behavior change is prohibited even when tests pass. When code and
 specification disagree, treat the code as defective unless an explicit
 specification change is accepted.
 
-## Colocated sibling dependencies
+## Package dependency policy
 
-- Declare a colocated LapisMD sibling in `lapismd-workspace.json`, keep its
-  explicit source `link:` dependency, and resolve it with
-  `deno task workspace:check` / `workspace:sync`; do not add the sibling
-  repository as a Deno workspace member.
-- Keep publishable manifests portable. Do not vendor sibling source, edit its
-  `node_modules`, or replace a local checkout with a registry copy.
-- When a sibling exports built output, rebuild it before validating this
-  repository as a consumer.
+- Consume published LapisMD packages through normal registry ranges.
+- Keep publishable manifests portable. Do not vendor dependency source, edit
+  dependency `node_modules`, or add checkout-specific paths.
+- If a LapisMD dependency needs a source fix, make the change in the owning
+  repository, verify it there, and consume a released package version here.
 
 ## Workflow
 
