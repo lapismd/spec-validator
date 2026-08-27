@@ -19,12 +19,12 @@ test("public package metadata names the canonical source and artifact files", ()
   });
   assert.equal(
     manifest.repository?.url,
-    "git+https://code.ju.ma/lapismd/spec-validator.git",
+    "git+https://github.com/lapismd/spec-validator.git",
   );
-  assert.equal(manifest.homepage, "https://code.ju.ma/lapismd/spec-validator");
+  assert.equal(manifest.homepage, "https://github.com/lapismd/spec-validator");
   assert.equal(
     manifest.bugs?.url,
-    "https://code.ju.ma/lapismd/spec-validator/issues",
+    "https://github.com/lapismd/spec-validator/issues",
   );
   assert.deepEqual(manifest.files, [
     "dist/**/*",

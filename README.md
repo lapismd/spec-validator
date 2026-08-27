@@ -143,5 +143,5 @@ workflow and required validation commands live in [`AGENTS.md`](./AGENTS.md).
 
 The `0.x` releases are the supported pre-1.0 contract for the LapisMD
 repositories. Report defects and compatibility problems through the
-[public issue tracker](https://code.ju.ma/lapismd/spec-validator/issues). See
+[public issue tracker](https://github.com/lapismd/spec-validator/issues). See
 [`CHANGELOG.md`](./CHANGELOG.md) for the public release history.

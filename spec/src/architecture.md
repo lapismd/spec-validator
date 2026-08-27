@@ -74,7 +74,7 @@ The repository is Deno-first while publishing a Node-compatible CLI and TypeScri
 
 ### Acceptance details
 
-- The manifest MUST declare public npm access, the canonical public repository, homepage, and issue tracker.
+- The manifest MUST declare public npm access and identify `https://github.com/lapismd/spec-validator` as the canonical public repository, homepage, and issue tracker root.
 - The package allowlist MUST contain only built runtime and type output, the optional usage skill, README, changelog, license, and package metadata.
 - Runtime and optional peer dependencies MUST use portable semver ranges without local protocols or machine paths.
 - The packed binary, Node and Deno exports, documentation files, and license MUST resolve without consulting the source checkout.
