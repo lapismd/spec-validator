@@ -88,7 +88,7 @@ function collectInputFiles(root: string, paths: string[]): string[] {
     }
     if (!info.isDirectory) return;
     const entries = [...Deno.readDirSync(path)].sort((left, right) =>
-      left.name.localeCompare(right.name)
+      left.name.localeCompare(right.name),
     );
     for (const entry of entries) visit(resolve(path, entry.name));
   };
@@ -186,8 +186,9 @@ export function buildWorkspaceGraph(repoRoot: string): WorkspaceGraph {
       if (linkedName === name) continue;
       const linkedNode = nodes.get(linkedName)!;
       if (link.declaration.direction === "dependency") {
-        node.dependencies = [...new Set([...node.dependencies, linkedName])]
-          .sort();
+        node.dependencies = [
+          ...new Set([...node.dependencies, linkedName]),
+        ].sort();
       } else {
         linkedNode.dependencies = [
           ...new Set([...linkedNode.dependencies, name]),
@@ -318,9 +319,10 @@ export async function runWorkspaceTask(
   for (const node of orderWorkspaceNodes(graph, selected)) {
     const contract = loadWorkspaceDeclaration(node.root).repository.tasks[task];
     const cacheKey = `${node.name}:${task}`;
-    const fingerprint = contract && options.cache !== false
-      ? await taskFingerprint(node.root, contract.inputs)
-      : null;
+    const fingerprint =
+      contract && options.cache !== false
+        ? await taskFingerprint(node.root, contract.inputs)
+        : null;
     if (
       contract &&
       fingerprint &&

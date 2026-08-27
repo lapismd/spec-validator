@@ -12,6 +12,9 @@ Vite, Storybook, and publishing tools.
 Deno requires unscoped filesystem permission when creating symlinks, so the
 tool itself MUST enforce the declared workspace and `node_modules` boundaries
 before using that permission.
+The root Prettier configuration formats the workspace implementation, fixtures,
+and schema so release checks apply one source-format contract throughout the
+repository.
 
 ## Public surface coverage
 

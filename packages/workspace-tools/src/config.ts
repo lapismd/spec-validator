@@ -10,12 +10,7 @@ import {
 
 const CONFIG_NAME = "lapismd-workspace.json";
 const ROOT_KEYS = new Set(["schemaVersion", "repository", "links"]);
-const REPOSITORY_KEYS = new Set([
-  "name",
-  "packages",
-  "workspaceRoot",
-  "tasks",
-]);
+const REPOSITORY_KEYS = new Set(["name", "packages", "workspaceRoot", "tasks"]);
 const LINK_KEYS = new Set([
   "name",
   "path",
@@ -90,10 +85,9 @@ function isPortableRange(range: string): boolean {
   if (/^(?:link|file|workspace|npm|jsr):/u.test(range) || isAbsolute(range)) {
     return false;
   }
-  return /^(?:\*|[~^]?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?|(?:[<>]=?\s*\d+\.\d+\.\d+)(?:\s+(?:[<>]=?\s*\d+\.\d+\.\d+))*)$/u
-    .test(
-      range,
-    );
+  return /^(?:\*|[~^]?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?|(?:[<>]=?\s*\d+\.\d+\.\d+)(?:\s+(?:[<>]=?\s*\d+\.\d+\.\d+))*)$/u.test(
+    range,
+  );
 }
 
 function parseVersion(version: string): [number, number, number] | null {
@@ -118,19 +112,20 @@ export function satisfiesRange(version: string, range: string): boolean {
   if (range.startsWith("^")) {
     const minimum = parseVersion(range.slice(1));
     if (!minimum || compareVersion(actual, minimum) < 0) return false;
-    const maximum: [number, number, number] = minimum[0] > 0
-      ? [minimum[0] + 1, 0, 0]
-      : minimum[1] > 0
-      ? [0, minimum[1] + 1, 0]
-      : [0, 0, minimum[2] + 1];
+    const maximum: [number, number, number] =
+      minimum[0] > 0
+        ? [minimum[0] + 1, 0, 0]
+        : minimum[1] > 0
+          ? [0, minimum[1] + 1, 0]
+          : [0, 0, minimum[2] + 1];
     return compareVersion(actual, maximum) < 0;
   }
   if (range.startsWith("~")) {
     const minimum = parseVersion(range.slice(1));
     return Boolean(
       minimum &&
-        compareVersion(actual, minimum) >= 0 &&
-        compareVersion(actual, [minimum[0], minimum[1] + 1, 0]) < 0,
+      compareVersion(actual, minimum) >= 0 &&
+      compareVersion(actual, [minimum[0], minimum[1] + 1, 0]) < 0,
     );
   }
   if (!range.startsWith(">") && !range.startsWith("<")) {
@@ -146,10 +141,10 @@ export function satisfiesRange(version: string, range: string): boolean {
     return match[1] === ">="
       ? compared >= 0
       : match[1] === "<="
-      ? compared <= 0
-      : match[1] === ">"
-      ? compared > 0
-      : compared < 0;
+        ? compared <= 0
+        : match[1] === ">"
+          ? compared > 0
+          : compared < 0;
   });
 }
 
@@ -218,15 +213,14 @@ export function parseWorkspaceDeclaration(
       throw new Error(`${label}.path must be relative`);
     }
     if (link.direction !== "dependency" && link.direction !== "dependent") {
-      throw new Error(
-        `${label}.direction must be dependency or dependent`,
-      );
+      throw new Error(`${label}.direction must be dependency or dependent`);
     }
     const buildValue = objectValue(link.build, `${label}.build`);
     onlyKeys(buildValue, BUILD_KEYS, `${label}.build`);
-    const task = buildValue.task === null
-      ? null
-      : stringValue(buildValue.task, `${label}.build.task`);
+    const task =
+      buildValue.task === null
+        ? null
+        : stringValue(buildValue.task, `${label}.build.task`);
     const inputs = relativePathArray(
       buildValue.inputs,
       `${label}.build.inputs`,
@@ -351,8 +345,8 @@ function hasExport(manifest: PackageManifest, requiredExport: string): boolean {
   if (typeof manifest.exports === "string") return requiredExport === ".";
   return Boolean(
     manifest.exports &&
-      typeof manifest.exports === "object" &&
-      Object.hasOwn(manifest.exports, requiredExport),
+    typeof manifest.exports === "object" &&
+    Object.hasOwn(manifest.exports, requiredExport),
   );
 }
 
@@ -476,11 +470,9 @@ export function validateWorkspaceLinks(repoRoot: string): ValidatedLink[] {
     }
     if (!manifest.version || !satisfiesRange(manifest.version, link.range)) {
       throw new Error(
-        `${link.name}@${
-          String(
-            manifest.version,
-          )
-        } does not satisfy ${link.range}`,
+        `${link.name}@${String(
+          manifest.version,
+        )} does not satisfy ${link.range}`,
       );
     }
     const denoPackage = readDenoPackageConfiguration(targetPath);
@@ -494,9 +486,9 @@ export function validateWorkspaceLinks(repoRoot: string): ValidatedLink[] {
       !satisfiesRange(denoPackage.version, link.range)
     ) {
       throw new Error(
-        `${link.name} Deno package ${
-          String(denoPackage.version)
-        } does not satisfy ${link.range}`,
+        `${link.name} Deno package ${String(
+          denoPackage.version,
+        )} does not satisfy ${link.range}`,
       );
     }
     for (const requiredExport of link.requiredExports) {
@@ -512,11 +504,11 @@ export function validateWorkspaceLinks(repoRoot: string): ValidatedLink[] {
       }
     }
     const outputPaths = link.build.outputs.map((output) =>
-      validatePackagePath(targetPath, output, `${link.name} build output`)
+      validatePackagePath(targetPath, output, `${link.name} build output`),
     );
     if (link.build.task !== null) {
       const inputPaths = link.build.inputs.map((input) =>
-        validatePackagePath(targetPath, input, `${link.name} build input`)
+        validatePackagePath(targetPath, input, `${link.name} build input`),
       );
       const newestInput = Math.max(...inputPaths.map(newestMtime));
       const newestOutput = Math.max(...outputPaths.map(newestMtime));

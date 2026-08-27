@@ -38,9 +38,10 @@ export async function main(input = Deno.args): Promise<number> {
       if (args.length > 0 || (action !== "check" && action !== "sync")) {
         throw new Error(usage());
       }
-      const links = action === "check"
-        ? validateWorkspaceLinks(root)
-        : syncWorkspaceLinks(root).entries;
+      const links =
+        action === "check"
+          ? validateWorkspaceLinks(root)
+          : syncWorkspaceLinks(root).entries;
       console.log(
         `${action} passed: ${links.length} link entr${
           links.length === 1 ? "y" : "ies"

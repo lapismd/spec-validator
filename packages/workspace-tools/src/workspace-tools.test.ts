@@ -310,12 +310,9 @@ Deno.test(
       );
       writeJson(resolve(provider, "package.json"), providerManifest);
 
-      writeRepositoryContract(
-        consumer,
-        "consumer",
-        "@test/consumer",
-        [providerLink("../missing")],
-      );
+      writeRepositoryContract(consumer, "consumer", "@test/consumer", [
+        providerLink("../missing"),
+      ]);
       assertThrows(
         () => validateWorkspaceLinks(consumer),
         /target is missing/u,
@@ -380,22 +377,14 @@ Deno.test(
           .isSymlink,
       );
 
-      writeRepositoryContract(
-        consumer,
-        "consumer",
-        "@test/consumer",
-        [],
-      );
+      writeRepositoryContract(consumer, "consumer", "@test/consumer", []);
       syncWorkspaceLinks(consumer);
       assertMissing(resolve(consumer, "node_modules/@test/provider"));
       assertMissing(resolve(consumer, "node_modules/.bin/provider"));
 
-      writeRepositoryContract(
-        consumer,
-        "consumer",
-        "@test/consumer",
-        [providerLink()],
-      );
+      writeRepositoryContract(consumer, "consumer", "@test/consumer", [
+        providerLink(),
+      ]);
 
       Deno.mkdirSync(resolve(consumer, "node_modules/@test/provider"), {
         recursive: true,
@@ -520,30 +509,33 @@ Deno.test(
   },
 );
 
-Deno.test("workspace task cache invalidates when declared inputs change", async () => {
-  const workspace = Deno.makeTempDirSync();
-  try {
-    const repository = resolve(workspace, "repository");
-    createRepository(repository, "repository", "@test/repository");
-    let runs = 0;
-    const runner = () => {
-      runs += 1;
-      return 0;
-    };
-    await runWorkspaceTask(repository, "build", {}, runner);
-    await runWorkspaceTask(repository, "build", {}, runner);
-    assertEquals(runs, 1);
+Deno.test(
+  "workspace task cache invalidates when declared inputs change",
+  async () => {
+    const workspace = Deno.makeTempDirSync();
+    try {
+      const repository = resolve(workspace, "repository");
+      createRepository(repository, "repository", "@test/repository");
+      let runs = 0;
+      const runner = () => {
+        runs += 1;
+        return 0;
+      };
+      await runWorkspaceTask(repository, "build", {}, runner);
+      await runWorkspaceTask(repository, "build", {}, runner);
+      assertEquals(runs, 1);
 
-    Deno.writeTextFileSync(
-      resolve(repository, "src/index.ts"),
-      "export const changed = true;\n",
-    );
-    await runWorkspaceTask(repository, "build", {}, runner);
-    assertEquals(runs, 2);
+      Deno.writeTextFileSync(
+        resolve(repository, "src/index.ts"),
+        "export const changed = true;\n",
+      );
+      await runWorkspaceTask(repository, "build", {}, runner);
+      assertEquals(runs, 2);
 
-    await runWorkspaceTask(repository, "build", { cache: false }, runner);
-    assertEquals(runs, 3);
-  } finally {
-    Deno.removeSync(workspace, { recursive: true });
-  }
-});
+      await runWorkspaceTask(repository, "build", { cache: false }, runner);
+      assertEquals(runs, 3);
+    } finally {
+      Deno.removeSync(workspace, { recursive: true });
+    }
+  },
+);
