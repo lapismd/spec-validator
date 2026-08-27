@@ -11,10 +11,14 @@
     "cli"
   ],
   "license": "MIT",
-  "author": "Steve Juma<help@lapis.md>",
+  "author": "Steve Juma <help@lapis.md>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lapismd/spec-validator.git"
+    "url": "git+https://code.ju.ma/lapismd/spec-validator.git"
+  },
+  "homepage": "https://code.ju.ma/lapismd/spec-validator",
+  "bugs": {
+    "url": "https://code.ju.ma/lapismd/spec-validator/issues"
   },
   "publishConfig": {
     "access": "public",
@@ -38,6 +42,7 @@
     "dist/**/*",
     "skill/**/*",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "engines": {

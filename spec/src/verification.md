@@ -14,6 +14,7 @@
 | SV-ARCH-003 | Implemented | `src/types.ts`; `src/commands/validate.ts`                                     |
 | SV-ARCH-004 | Implemented | `deno.json` lifecycle allowlist; package manifest checks                       |
 | SV-ARCH-005 | Implemented | Deno package-import, exact-version, source-audit, frozen-CI, and publint tests |
+| SV-ARCH-006 | Implemented | `package.json`; package publication contract test; packed consumer suite       |
 | SV-CFG-001  | Implemented | `src/config.ts`; neutral profiles; five consumer configs                       |
 | SV-CFG-002  | Implemented | `src/config.ts`; `src/commands/validate.ts`                                    |
 | SV-CFG-003  | Implemented | diagnostic and reference resolution config tests                               |

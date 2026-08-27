@@ -29,10 +29,24 @@ QMD support is optional and only required for `search` and `index`.
 
 ## Install and initialize
 
+The Deno CLI is the canonical interface:
+
 ```bash
 deno add --dev npm:@lapismd/spec-validator
 deno run -A npm:@lapismd/spec-validator init --profile heading
 deno run -A npm:@lapismd/spec-validator check
+```
+
+Node.js consumers can install the same npm artifact and use its package-manager
+binary or typed library exports:
+
+```bash
+pnpm add -D @lapismd/spec-validator
+pnpm exec spec-validator check
+```
+
+```ts
+import { defineConfig, headingRequirements } from "@lapismd/spec-validator";
 ```
 
 Use `--profile table` for a table-based requirement specification. Without an
@@ -124,3 +138,10 @@ profiles, config resolution helpers, the specification model, diagnostics, and
 
 Canonical requirements live in [`spec/src`](./spec/src). The contributor
 workflow and required validation commands live in [`AGENTS.md`](./AGENTS.md).
+
+## Support status
+
+The `0.x` releases are the supported pre-1.0 contract for the LapisMD
+repositories. Report defects and compatibility problems through the
+[public issue tracker](https://code.ju.ma/lapismd/spec-validator/issues). See
+[`CHANGELOG.md`](./CHANGELOG.md) for the public release history.

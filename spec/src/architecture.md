@@ -11,6 +11,7 @@ The repository is Deno-first while publishing a Node-compatible CLI and TypeScri
 | Plugin contract        | Architecture    | SV-ARCH-003 |
 | QMD native builds      | Architecture    | SV-ARCH-004 |
 | Deno workspace         | Architecture    | SV-ARCH-005 |
+| Public package         | Architecture    | SV-ARCH-006 |
 
 ## SV-ARCH-001 — CLI and registry
 
@@ -66,3 +67,14 @@ The repository is Deno-first while publishing a Node-compatible CLI and TypeScri
 - `deno ci` MUST reproduce dependencies from the frozen lock before validation.
 - Cross-repository orchestration MUST use the versioned workspace schema, explicit dependency directions, build freshness checks, and content-addressed invalidation for declared deterministic tasks; active repository tasks and guidance MUST invoke Deno rather than pnpm or Turbo, while package lifecycle scripts MAY delegate to canonical Deno tasks.
 - First-party Deno automation MUST use Deno or Web APIs; Node APIs MUST stay in explicit npm compatibility adapters and tests.
+
+## SV-ARCH-006 — Public package
+
+**Requirement.** The npm artifact MUST be a self-contained public package whose metadata identifies the canonical public source and whose contents match the documented runtime contract.
+
+### Acceptance details
+
+- The manifest MUST declare public npm access, the canonical public repository, homepage, and issue tracker.
+- The package allowlist MUST contain only built runtime and type output, the optional usage skill, README, changelog, license, and package metadata.
+- Runtime and optional peer dependencies MUST use portable semver ranges without local protocols or machine paths.
+- The packed binary, Node and Deno exports, documentation files, and license MUST resolve without consulting the source checkout.
