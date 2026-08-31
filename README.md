@@ -41,8 +41,8 @@ Node.js consumers can install the same npm artifact and use its package-manager
 binary or typed library exports:
 
 ```bash
-pnpm add -D @lapismd/spec-validator
-pnpm exec spec-validator check
+npm install --save-dev @lapismd/spec-validator
+npx spec-validator check
 ```
 
 ```ts

@@ -12,6 +12,7 @@ The repository is Deno-first while publishing a Node-compatible CLI and TypeScri
 | QMD native builds      | Architecture    | SV-ARCH-004 |
 | Deno workspace         | Architecture    | SV-ARCH-005 |
 | Public package         | Architecture    | SV-ARCH-006 |
+| Trusted publication    | Architecture    | SV-ARCH-007 |
 
 ## SV-ARCH-001 — CLI and registry
 
@@ -78,3 +79,14 @@ The repository is Deno-first while publishing a Node-compatible CLI and TypeScri
 - The package allowlist MUST contain only built runtime and type output, the optional usage skill, README, changelog, license, and package metadata.
 - Runtime and optional peer dependencies MUST use portable semver ranges without local protocols or machine paths.
 - The packed binary, Node and Deno exports, documentation files, and license MUST resolve without consulting the source checkout.
+
+## SV-ARCH-007 — Trusted npm publication
+
+**Requirement.** Stable npm releases MUST be published from an exact repository tag through GitHub Actions trusted publishing, with the validated package artifact preserved across the publication boundary.
+
+### Acceptance details
+
+- The publication workflow MUST run only for `v*` tags and reject a tag whose version does not exactly match `package.json`.
+- The package gate MUST install from the frozen Deno lockfile, run the canonical checks and tests, and upload exactly one npm tarball.
+- The publication job MUST download that verified tarball and use the protected `npm-production` environment with GitHub OIDC publish-only permission rather than an npm token.
+- A successful or retry-safe already-published release MUST verify the installed version, registry signatures, and Sigstore provenance.

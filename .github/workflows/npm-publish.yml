@@ -1,0 +1,169 @@
+name: Publish npm package
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: spec-validator-npm-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  package-gate:
+    name: Validate tagged package
+    runs-on: ubuntu-latest
+    outputs:
+      artifact_name: ${{ steps.release.outputs.artifact_name }}
+      published: ${{ steps.release.outputs.published }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - name: Check out the release tag
+        uses: actions/checkout@v7
+
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.9.5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies from the frozen lockfile
+        run: deno task ci
+
+      - name: Validate exact release metadata
+        id: release
+        run: |
+          package_name="$(node --input-type=module -e "import manifest from './package.json' with { type: 'json' }; console.log(manifest.name)")"
+          version="$(node --input-type=module -e "import manifest from './package.json' with { type: 'json' }; console.log(manifest.version)")"
+          tag_version="${GITHUB_REF_NAME#v}"
+          test "$GITHUB_REF_NAME" = "v$version"
+          test "$tag_version" = "$version"
+
+          published=false
+          if [ "$(npm view "${package_name}@${version}" version --registry=https://registry.npmjs.org 2>/dev/null || true)" = "$version" ]; then
+            published=true
+          fi
+
+          {
+            echo "artifact_name=spec-validator-release-${GITHUB_SHA}"
+            echo "published=$published"
+            echo "version=$version"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Run canonical checks
+        run: |
+          deno task check
+          deno task test:all
+
+      - name: Pack the exact npm artifact
+        run: |
+          mkdir -p .release
+          npm pack --ignore-scripts --pack-destination .release
+          shopt -s nullglob
+          tarballs=(.release/*.tgz)
+          test "${#tarballs[@]}" -eq 1
+
+      - name: Upload immutable package artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.release.outputs.artifact_name }}
+          path: .release/*.tgz
+          if-no-files-found: error
+          retention-days: 14
+
+  publish-production:
+    name: Publish with npm trusted publishing
+    needs: package-gate
+    if: needs.package-gate.outputs.published != 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: npm-production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Install current npm
+        run: npm install --global npm@12.0.2
+
+      - name: Download verified package artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.package-gate.outputs.artifact_name }}
+          path: .release
+
+      - name: Publish exact verified tarball
+        run: |
+          shopt -s nullglob
+          tarballs=(.release/*.tgz)
+          test "${#tarballs[@]}" -eq 1
+          npm publish "${tarballs[0]}" --provenance --access public --registry=https://registry.npmjs.org
+
+  verify-provenance:
+    name: Verify installed package and provenance
+    needs:
+      - package-gate
+      - publish-production
+    if: >-
+      always() &&
+      needs.package-gate.result == 'success' &&
+      (needs.publish-production.result == 'success' || needs.publish-production.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Install current npm
+        run: npm install --global npm@12.0.2
+
+      - name: Wait for the exact npm version
+        env:
+          PACKAGE_NAME: "@lapismd/spec-validator"
+          VERSION: ${{ needs.package-gate.outputs.version }}
+        run: |
+          for attempt in $(seq 1 12); do
+            published="$(npm view "${PACKAGE_NAME}@${VERSION}" version --registry=https://registry.npmjs.org 2>/dev/null || true)"
+            if [ "$published" = "$VERSION" ]; then
+              exit 0
+            fi
+            if [ "$attempt" = "12" ]; then
+              echo "${PACKAGE_NAME}@${VERSION} was not available from npm after 120 seconds" >&2
+              exit 1
+            fi
+            sleep 10
+          done
+
+      - name: Verify registry signatures and Sigstore provenance
+        env:
+          PACKAGE_NAME: "@lapismd/spec-validator"
+          VERSION: ${{ needs.package-gate.outputs.version }}
+        run: |
+          verify_dir="$RUNNER_TEMP/spec-validator-provenance"
+          mkdir -p "$verify_dir"
+          cd "$verify_dir"
+          npm init --yes
+          npm install --ignore-scripts --package-lock=true "${PACKAGE_NAME}@${VERSION}"
+          installed="$(node -e "console.log(require('./node_modules/@lapismd/spec-validator/package.json').version)")"
+          test "$installed" = "$VERSION"
+          npm audit signatures --include-attestations
