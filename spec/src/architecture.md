@@ -89,4 +89,4 @@ The repository is Deno-first while publishing a Node-compatible CLI and TypeScri
 - The publication workflow MUST run only for `v*` tags and reject a tag whose version does not exactly match `package.json`.
 - The package gate MUST install from the frozen Deno lockfile, run the canonical checks and tests, and upload exactly one npm tarball.
 - The publication job MUST download that verified tarball and use the protected `npm-production` environment with GitHub OIDC publish-only permission rather than an npm token.
-- A successful or retry-safe already-published release MUST verify the installed version, registry signatures, and Sigstore provenance.
+- A successful or retry-safe already-published release MUST verify the installed version, registry signatures, and Sigstore provenance, then create or retain a non-draft, non-prerelease GitHub Release for the exact existing tag.

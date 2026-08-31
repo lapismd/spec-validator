@@ -34,3 +34,19 @@ test("public package metadata names the canonical source and artifact files", ()
     "LICENSE",
   ]);
 });
+
+test("trusted publication records the exact tag as a GitHub release", () => {
+  const workflow = readFileSync(
+    ".github/workflows/npm-publish.yml",
+    "utf8",
+  );
+
+  assert.match(workflow, /release-notes:/);
+  assert.match(workflow, /needs:\n\s+- package-gate\n\s+- verify-provenance/);
+  assert.match(workflow, /if: needs\.verify-provenance\.result == 'success'/);
+  assert.match(workflow, /gh release create "\$GITHUB_REF_NAME"/);
+  assert.match(workflow, /--verify-tag/);
+  assert.match(workflow, /gh release view "\$GITHUB_REF_NAME"/);
+  assert.match(workflow, /--json isDraft/);
+  assert.match(workflow, /--json isPrerelease/);
+});

@@ -167,3 +167,33 @@ jobs:
           installed="$(node -e "console.log(require('./node_modules/@lapismd/spec-validator/package.json').version)")"
           test "$installed" = "$VERSION"
           npm audit signatures --include-attestations
+
+  release-notes:
+    name: Create GitHub release
+    needs:
+      - package-gate
+      - verify-provenance
+    if: needs.verify-provenance.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Create or retain the exact tag release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.package-gate.outputs.version }}
+        run: |
+          title="@lapismd/spec-validator v${VERSION}"
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --title "$title"
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              --repo "$GITHUB_REPOSITORY" \
+              --verify-tag \
+              --title "$title" \
+              --generate-notes
+          fi
+
+          test "$(gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)" = "$GITHUB_REF_NAME"
+          test "$(gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = "false"
+          test "$(gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json isPrerelease --jq .isPrerelease)" = "false"
