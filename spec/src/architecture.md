@@ -13,6 +13,8 @@ The repository is Deno-first while publishing a Node-compatible CLI and TypeScri
 | Deno workspace         | Architecture    | SV-ARCH-005 |
 | Public package         | Architecture    | SV-ARCH-006 |
 | Trusted publication    | Architecture    | SV-ARCH-007 |
+| Counted-line budgets   | Architecture    | SV-ARCH-008 |
+| Module isolation       | Architecture    | SV-ARCH-009 |
 
 ## SV-ARCH-001 — CLI and registry
 
@@ -90,3 +92,42 @@ The repository is Deno-first while publishing a Node-compatible CLI and TypeScri
 - The package gate MUST install from the frozen Deno lockfile, run the canonical checks and tests, and upload exactly one npm tarball.
 - The publication job MUST download that verified tarball and use the protected `npm-production` environment with GitHub OIDC publish-only permission rather than an npm token.
 - A successful or retry-safe already-published release MUST verify the installed version, registry signatures, and Sigstore provenance, then create or retain a non-draft, non-prerelease GitHub Release for the exact existing tag.
+
+## SV-ARCH-008 — Counted-line budgets
+
+**Requirement.** First-party source MUST stay inside counted-line budgets enforced by a Deno architecture checker that fails closed when its baseline is missing.
+
+### Acceptance details
+
+- Counted lines MUST be physical lines minus blank and comment-only lines, matching the shared LapisMD metric.
+- New production and script files MUST stay at or under 300 counted lines and new tests at or under 500.
+- A baselined file MUST NOT grow counted lines without an updated `scripts/architecture-baseline.json` in the same change.
+- A recorded budget MUST fail when the current size plus twenty is still below it, and `--write-baseline` MUST be refused when `CI` is true.
+
+## SV-ARCH-009 — Module isolation
+
+**Requirement.** Production source MUST stay isolated from tests and MUST NOT use generic dump filenames.
+
+### Acceptance details
+
+- A production module MUST NOT import a `.test` or `.spec` specifier.
+- Files and directories named `utils`, `helpers`, `common`, or `services` MUST be rejected.
+- The checker MUST audit `src/`, `scripts/`, `tests/`, and `packages/workspace-tools/src/` while excluding its own fixtures.
+
+## Counted-line ratchet
+
+`src/validators/`, `src/commands/`, `src/platform/`, and `src/presets/` already
+own the repository structure, so SV-ARCH-008 and SV-ARCH-009 add a size and
+naming ratchet rather than a folder taxonomy. `scripts/check-architecture.ts`
+records the current budgets in `scripts/architecture-baseline.json`; a later
+change that needs room MUST extract into a named module and lower the budget in
+the same change.
+
+The package claims no import-direction layer matrix. The surfaces in each
+coverage table are public boundaries, not layers, so the architecture checker
+enforces size, naming, and production isolation from tests only.
+
+`deno task check:architecture` runs the gate and `deno task check` and
+`deno task test:all` own it. Both lanes stay Deno-owned: the checker is
+first-party Deno automation under SV-ARCH-005 and is audited by
+`scripts/check-runtime-boundaries.ts`.

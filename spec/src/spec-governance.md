@@ -26,6 +26,7 @@ Specification changes precede or accompany protected implementation. Updating an
 | Skill payload and install command                         | `skill-and-agents.md`    |
 | Specification chapters, book, QMD config, and agent guide | `spec-governance.md`     |
 | Package manifests and build scripts                       | `architecture.md`        |
+| Counted-line architecture checker and baseline            | `architecture.md`        |
 | Deno workspace and cross-repository tooling               | `workspace-tools.md`     |
 
 ## SV-GOV-002 — Verification matrix

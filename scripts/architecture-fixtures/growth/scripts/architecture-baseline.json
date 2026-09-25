@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "sourceCommit": "fixture",
+  "limits": {
+    "newProductionCountedLines": 300,
+    "newTestCountedLines": 500,
+    "newScriptCountedLines": 300
+  },
+  "files": {
+    "src/hotspot.ts": {
+      "countedLines": 10,
+      "physicalLines": 11,
+      "forbiddenImportCount": 0
+    }
+  }
+}

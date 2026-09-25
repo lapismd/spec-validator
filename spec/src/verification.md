@@ -16,6 +16,8 @@
 | SV-ARCH-005 | Implemented | Deno package-import, exact-version, source-audit, frozen-CI, and publint tests |
 | SV-ARCH-006 | Implemented | `package.json`; package publication contract test; packed consumer suite       |
 | SV-ARCH-007 | Implemented | `.github/workflows/npm-publish.yml`; tag gate and OIDC provenance verification |
+| SV-ARCH-008 | Implemented | `tests/architecture.test.ts`; `deno task check:architecture` gate              |
+| SV-ARCH-009 | Implemented | `scripts/architecture-fixtures`; dump-name and production-import cases         |
 | SV-CFG-001  | Implemented | `src/config.ts`; neutral profiles; five consumer configs                       |
 | SV-CFG-002  | Implemented | `src/config.ts`; `src/commands/validate.ts`                                    |
 | SV-CFG-003  | Implemented | diagnostic and reference resolution config tests                               |

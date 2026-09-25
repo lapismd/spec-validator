@@ -113,7 +113,14 @@ export default defineConfig(headingRequirements(), {
     },
   },
   check: {
-    lanes: [{ name: "tests", command: "deno", args: ["task", "test:all"] }],
+    lanes: [
+      {
+        name: "architecture",
+        command: "deno",
+        args: ["task", "check:architecture"],
+      },
+      { name: "tests", command: "deno", args: ["task", "test:all"] },
+    ],
     build: true,
     first: true,
   },

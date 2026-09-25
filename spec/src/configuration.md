@@ -54,3 +54,15 @@ Consumers configure the CLI with `spec-validator.config.ts`, `.mjs`, or `.json` 
 - Consumer configuration MUST be able to express mapped or any-chapter spec-first policy, grouped verification rows and row multiplicity, repository-specific Storybook roots and SUMMARY link styles, exact forbidden filesystem entries, and repository-owned table and acceptance-detail dialects.
 - Structured additional lanes MUST use separate `name`, `command`, and `args` fields without shell-word splitting, including canonical Deno task lanes.
 - A repository-specific check MAY remain a named lane until a reusable validator exists.
+
+## Repository-owned lanes
+
+This repository exercises SV-CFG-004 on itself. Its own
+`spec-validator.config.mjs` declares an `architecture` lane that runs
+`deno task check:architecture` before the `tests` lane, so a counted-line budget
+regression fails `check` earlier than the full test suite.
+
+Both lanes are canonical Deno task lanes and stay repository-specific under the
+last acceptance detail above, because no reusable architecture validator exists
+yet. The counted-line contract itself is normative in
+[Architecture](./architecture.md) as SV-ARCH-008 and SV-ARCH-009.

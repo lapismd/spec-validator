@@ -1,0 +1,386 @@
+{
+  "version": 1,
+  "sourceCommit": "3b43173ab60269004b5ce32a2a269f805053da7c",
+  "limits": {
+    "newProductionCountedLines": 300,
+    "newTestCountedLines": 500,
+    "newScriptCountedLines": 300
+  },
+  "files": {
+    "packages/workspace-tools/src/cli.ts": {
+      "countedLines": 82,
+      "physicalLines": 88,
+      "forbiddenImportCount": 0
+    },
+    "packages/workspace-tools/src/config.ts": {
+      "countedLines": 507,
+      "physicalLines": 536,
+      "forbiddenImportCount": 0
+    },
+    "packages/workspace-tools/src/graph.ts": {
+      "countedLines": 330,
+      "physicalLines": 354,
+      "forbiddenImportCount": 0
+    },
+    "packages/workspace-tools/src/links.ts": {
+      "countedLines": 120,
+      "physicalLines": 134,
+      "forbiddenImportCount": 0
+    },
+    "packages/workspace-tools/src/mod.ts": {
+      "countedLines": 17,
+      "physicalLines": 17,
+      "forbiddenImportCount": 0
+    },
+    "packages/workspace-tools/src/pack.ts": {
+      "countedLines": 54,
+      "physicalLines": 59,
+      "forbiddenImportCount": 0
+    },
+    "packages/workspace-tools/src/types.ts": {
+      "countedLines": 60,
+      "physicalLines": 67,
+      "forbiddenImportCount": 0
+    },
+    "packages/workspace-tools/src/workspace-tools.test.ts": {
+      "countedLines": 506,
+      "physicalLines": 541,
+      "forbiddenImportCount": 0
+    },
+    "scripts/architecture-lines.ts": {
+      "countedLines": 42,
+      "physicalLines": 51,
+      "forbiddenImportCount": 0
+    },
+    "scripts/architecture-policy.ts": {
+      "countedLines": 36,
+      "physicalLines": 54,
+      "forbiddenImportCount": 0
+    },
+    "scripts/check-architecture.ts": {
+      "countedLines": 279,
+      "physicalLines": 318,
+      "forbiddenImportCount": 0
+    },
+    "scripts/check-deno-version.ts": {
+      "countedLines": 8,
+      "physicalLines": 10,
+      "forbiddenImportCount": 0
+    },
+    "scripts/check-runtime-boundaries.ts": {
+      "countedLines": 90,
+      "physicalLines": 99,
+      "forbiddenImportCount": 0
+    },
+    "scripts/clean-node-output.ts": {
+      "countedLines": 11,
+      "physicalLines": 14,
+      "forbiddenImportCount": 0
+    },
+    "scripts/prepare-cli-bin.ts": {
+      "countedLines": 34,
+      "physicalLines": 37,
+      "forbiddenImportCount": 0
+    },
+    "src/argv.ts": {
+      "countedLines": 109,
+      "physicalLines": 118,
+      "forbiddenImportCount": 0
+    },
+    "src/cli-core.ts": {
+      "countedLines": 94,
+      "physicalLines": 95,
+      "forbiddenImportCount": 0
+    },
+    "src/cli.deno.ts": {
+      "countedLines": 6,
+      "physicalLines": 10,
+      "forbiddenImportCount": 0
+    },
+    "src/cli.spec.ts": {
+      "countedLines": 128,
+      "physicalLines": 134,
+      "forbiddenImportCount": 0
+    },
+    "src/cli.ts": {
+      "countedLines": 25,
+      "physicalLines": 31,
+      "forbiddenImportCount": 0
+    },
+    "src/color.spec.ts": {
+      "countedLines": 17,
+      "physicalLines": 19,
+      "forbiddenImportCount": 0
+    },
+    "src/color.ts": {
+      "countedLines": 38,
+      "physicalLines": 42,
+      "forbiddenImportCount": 0
+    },
+    "src/commands/build.ts": {
+      "countedLines": 28,
+      "physicalLines": 29,
+      "forbiddenImportCount": 0
+    },
+    "src/commands/check.ts": {
+      "countedLines": 76,
+      "physicalLines": 80,
+      "forbiddenImportCount": 0
+    },
+    "src/commands/doctor.ts": {
+      "countedLines": 326,
+      "physicalLines": 334,
+      "forbiddenImportCount": 0
+    },
+    "src/commands/first.ts": {
+      "countedLines": 107,
+      "physicalLines": 111,
+      "forbiddenImportCount": 0
+    },
+    "src/commands/init.ts": {
+      "countedLines": 233,
+      "physicalLines": 244,
+      "forbiddenImportCount": 0
+    },
+    "src/commands/list.ts": {
+      "countedLines": 39,
+      "physicalLines": 40,
+      "forbiddenImportCount": 0
+    },
+    "src/commands/search.spec.ts": {
+      "countedLines": 49,
+      "physicalLines": 54,
+      "forbiddenImportCount": 0
+    },
+    "src/commands/search.ts": {
+      "countedLines": 216,
+      "physicalLines": 230,
+      "forbiddenImportCount": 0
+    },
+    "src/commands/skill.spec.ts": {
+      "countedLines": 13,
+      "physicalLines": 15,
+      "forbiddenImportCount": 0
+    },
+    "src/commands/skill.ts": {
+      "countedLines": 46,
+      "physicalLines": 50,
+      "forbiddenImportCount": 0
+    },
+    "src/commands/validate.ts": {
+      "countedLines": 115,
+      "physicalLines": 118,
+      "forbiddenImportCount": 0
+    },
+    "src/config.spec.ts": {
+      "countedLines": 76,
+      "physicalLines": 82,
+      "forbiddenImportCount": 0
+    },
+    "src/config.ts": {
+      "countedLines": 316,
+      "physicalLines": 334,
+      "forbiddenImportCount": 0
+    },
+    "src/context.ts": {
+      "countedLines": 34,
+      "physicalLines": 35,
+      "forbiddenImportCount": 0
+    },
+    "src/deno-contract.ts": {
+      "countedLines": 20,
+      "physicalLines": 23,
+      "forbiddenImportCount": 0
+    },
+    "src/diagnostics.spec.ts": {
+      "countedLines": 32,
+      "physicalLines": 35,
+      "forbiddenImportCount": 0
+    },
+    "src/diagnostics.ts": {
+      "countedLines": 33,
+      "physicalLines": 36,
+      "forbiddenImportCount": 0
+    },
+    "src/index-core.ts": {
+      "countedLines": 23,
+      "physicalLines": 23,
+      "forbiddenImportCount": 0
+    },
+    "src/index.deno.ts": {
+      "countedLines": 3,
+      "physicalLines": 5,
+      "forbiddenImportCount": 0
+    },
+    "src/index.ts": {
+      "countedLines": 3,
+      "physicalLines": 5,
+      "forbiddenImportCount": 0
+    },
+    "src/model.ts": {
+      "countedLines": 387,
+      "physicalLines": 408,
+      "forbiddenImportCount": 0
+    },
+    "src/package-contract.spec.ts": {
+      "countedLines": 48,
+      "physicalLines": 52,
+      "forbiddenImportCount": 0
+    },
+    "src/platform/current.ts": {
+      "countedLines": 80,
+      "physicalLines": 87,
+      "forbiddenImportCount": 0
+    },
+    "src/platform/deno.ts": {
+      "countedLines": 130,
+      "physicalLines": 138,
+      "forbiddenImportCount": 0
+    },
+    "src/platform/node.ts": {
+      "countedLines": 66,
+      "physicalLines": 69,
+      "forbiddenImportCount": 0
+    },
+    "src/platform/types.ts": {
+      "countedLines": 60,
+      "physicalLines": 65,
+      "forbiddenImportCount": 0
+    },
+    "src/profiles.ts": {
+      "countedLines": 73,
+      "physicalLines": 78,
+      "forbiddenImportCount": 0
+    },
+    "src/reporter.ts": {
+      "countedLines": 113,
+      "physicalLines": 119,
+      "forbiddenImportCount": 0
+    },
+    "src/test-setup.ts": {
+      "countedLines": 2,
+      "physicalLines": 3,
+      "forbiddenImportCount": 0
+    },
+    "src/tracked-files.ts": {
+      "countedLines": 35,
+      "physicalLines": 37,
+      "forbiddenImportCount": 0
+    },
+    "src/types.ts": {
+      "countedLines": 369,
+      "physicalLines": 392,
+      "forbiddenImportCount": 0
+    },
+    "src/validators/book.ts": {
+      "countedLines": 77,
+      "physicalLines": 79,
+      "forbiddenImportCount": 0
+    },
+    "src/validators/governance.spec.ts": {
+      "countedLines": 129,
+      "physicalLines": 135,
+      "forbiddenImportCount": 0
+    },
+    "src/validators/governance.ts": {
+      "countedLines": 314,
+      "physicalLines": 324,
+      "forbiddenImportCount": 0
+    },
+    "src/validators/index.ts": {
+      "countedLines": 61,
+      "physicalLines": 66,
+      "forbiddenImportCount": 0
+    },
+    "src/validators/markdownlint.ts": {
+      "countedLines": 54,
+      "physicalLines": 56,
+      "forbiddenImportCount": 0
+    },
+    "src/validators/package-docs.ts": {
+      "countedLines": 58,
+      "physicalLines": 61,
+      "forbiddenImportCount": 0
+    },
+    "src/validators/package-manifest.ts": {
+      "countedLines": 101,
+      "physicalLines": 103,
+      "forbiddenImportCount": 0
+    },
+    "src/validators/public-surfaces.ts": {
+      "countedLines": 148,
+      "physicalLines": 155,
+      "forbiddenImportCount": 0
+    },
+    "src/validators/qmd.ts": {
+      "countedLines": 68,
+      "physicalLines": 70,
+      "forbiddenImportCount": 0
+    },
+    "src/validators/repository-layout.spec.ts": {
+      "countedLines": 41,
+      "physicalLines": 43,
+      "forbiddenImportCount": 0
+    },
+    "src/validators/repository-layout.ts": {
+      "countedLines": 67,
+      "physicalLines": 69,
+      "forbiddenImportCount": 0
+    },
+    "src/validators/spec-first.spec.ts": {
+      "countedLines": 65,
+      "physicalLines": 71,
+      "forbiddenImportCount": 0
+    },
+    "src/validators/spec-first.ts": {
+      "countedLines": 312,
+      "physicalLines": 326,
+      "forbiddenImportCount": 0
+    },
+    "src/validators/storybook-catalog.spec.ts": {
+      "countedLines": 70,
+      "physicalLines": 76,
+      "forbiddenImportCount": 0
+    },
+    "src/validators/storybook-catalog.ts": {
+      "countedLines": 659,
+      "physicalLines": 694,
+      "forbiddenImportCount": 0
+    },
+    "src/validators/storybook-mirrors.spec.ts": {
+      "countedLines": 173,
+      "physicalLines": 177,
+      "forbiddenImportCount": 0
+    },
+    "src/validators/storybook-mirrors.ts": {
+      "countedLines": 344,
+      "physicalLines": 357,
+      "forbiddenImportCount": 0
+    },
+    "src/validators/summary.ts": {
+      "countedLines": 87,
+      "physicalLines": 90,
+      "forbiddenImportCount": 0
+    },
+    "src/validators/verification.spec.ts": {
+      "countedLines": 111,
+      "physicalLines": 114,
+      "forbiddenImportCount": 0
+    },
+    "src/validators/verification.ts": {
+      "countedLines": 261,
+      "physicalLines": 270,
+      "forbiddenImportCount": 0
+    },
+    "tests/architecture.test.ts": {
+      "countedLines": 242,
+      "physicalLines": 268,
+      "forbiddenImportCount": 0
+    },
+    "tests/deno-cli.test.ts": {
+      "countedLines": 40,
+      "physicalLines": 42,
+      "forbiddenImportCount": 0
+    }
+  }
+}
