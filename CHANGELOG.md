@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.3
+
+Upload the exact validated tarball from the hidden release directory, retaining the artifact-only trusted publication boundary.
+
 ## 0.1.2
 
 Install pinned mdBook 0.5.2 in trusted publication CI so the real nested-book regression and canonical book build run on the release runner; retain the failed v0.1.1 tag without replacement.

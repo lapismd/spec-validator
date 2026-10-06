@@ -85,6 +85,7 @@ jobs:
         with:
           name: ${{ steps.release.outputs.artifact_name }}
           path: .release/*.tgz
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 14
 
