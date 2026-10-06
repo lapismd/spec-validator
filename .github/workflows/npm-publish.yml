@@ -39,6 +39,11 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
 
+      - name: Install pinned mdBook
+        uses: peaceiris/actions-mdbook@v2
+        with:
+          mdbook-version: "0.5.2"
+
       - name: Install dependencies from the frozen lockfile
         run: deno task ci
 

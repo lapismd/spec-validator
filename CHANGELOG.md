@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2
+
+Install pinned mdBook 0.5.2 in trusted publication CI so the real nested-book regression and canonical book build run on the release runner; retain the failed v0.1.1 tag without replacement.
+
 ## 0.1.1
 
 Add optional document roles, globally checked split verification, physical-line and UTF-8-byte limits, bounded nested navigation, scoped lexical/semantic search, mapped topic alternatives and fresh consumer-validated unchanged-contract confirmations. Explicit JJ ranges and default merge checks now use JJ without requiring a colocated Git checkout.

@@ -133,3 +133,5 @@ first-party Deno automation under SV-ARCH-005 and is audited by
 `scripts/check-runtime-boundaries.ts`.
 
 The bounded-document delivery extracts validator defaults, document-role classification and JJ diff parsing into owned modules before recording the updated counted-line baseline. New modules remain inside the 300-line budget.
+
+Release qualification installs mdBook 0.5.2 before canonical checks and the actual nested-book regression. The failed v0.1.1 package gate exposed an absent CI binary, not a passing substitute; v0.1.2 retains that regression and qualifies the explicit prerequisite.

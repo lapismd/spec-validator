@@ -66,3 +66,5 @@ Both lanes are canonical Deno task lanes and stay repository-specific under the
 last acceptance detail above, because no reusable architecture validator exists
 yet. The counted-line contract itself is normative in
 [Architecture](./architecture.md) as SV-ARCH-008 and SV-ARCH-009.
+
+The release workflow is mapped to Architecture alongside package metadata so installation and publication changes retain same-change canonical coverage.

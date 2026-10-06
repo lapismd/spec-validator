@@ -39,6 +39,10 @@ export default defineConfig(headingRequirements(), {
       ],
       rules: [
         {
+          pattern: "^\\.github/workflows/",
+          chapters: ["spec/src/architecture.md"],
+        },
+        {
           pattern: "^src/(?:cli(?:-core|\\.deno)?|argv|color|reporter)\\.ts$",
           chapters: ["spec/src/cli.md"],
         },
@@ -102,6 +106,7 @@ export default defineConfig(headingRequirements(), {
         },
       ],
       protected: [
+        "^\\.github/workflows/",
         "^src/",
         "^spec-validator\\.config\\.(?:ts|mjs|json)$",
         "^skill/",
