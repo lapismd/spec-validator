@@ -1,21 +1,38 @@
+import { loadResolvedConfig } from "../config.js";
+import { stageBook } from "../book-staging.js";
+import { watchBookSources } from "../book-serving.js";
 import { assertCommandArgs } from "../argv.js";
-import { runtime, spawnSync } from "../platform/current.js";
+import { runtime, spawnSync, spawnAsync } from "../platform/current.js";
 import type { Reporter } from "../reporter.js";
 
-export function buildCommand(
+export async function buildCommand(
   repoRoot: string,
   argv: string[],
   reporter: Reporter,
   mode: "build" | "serve" = "build",
-): number {
+): Promise<number> {
   assertCommandArgs(argv);
-  const args =
-    mode === "serve" ? ["serve", "./spec", "--open"] : ["build", "./spec"];
-  const result = spawnSync("mdbook", args, {
+  const config = await loadResolvedConfig(repoRoot);
+  const book = stageBook(repoRoot, config);
+  const args = mode === "serve" ? ["serve", book, "--open"] : ["build", book];
+  const stop =
+    mode === "serve"
+      ? watchBookSources(repoRoot, config, (error) =>
+          reporter.writeError(error.message),
+        )
+      : () => {};
+  const options = {
     cwd: repoRoot,
-    stdio: reporter.json ? ["ignore", "pipe", "pipe"] : "inherit",
+    stdio: reporter.json
+      ? (["ignore", "pipe", "pipe"] as ["ignore", "pipe", "pipe"])
+      : ("inherit" as const),
     shell: runtime.platform === "win32",
-  });
+  };
+  const result = await (
+    mode === "serve"
+      ? spawnAsync("mdbook", args, options)
+      : Promise.resolve(spawnSync("mdbook", args, options))
+  ).finally(stop);
   const status = result.status ?? 1;
   if (reporter.json) {
     reporter.writeReport({

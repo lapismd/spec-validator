@@ -13,6 +13,19 @@ export {
   singleIdVerification,
   tableRequirements,
 } from "./profiles.js";
+export { expandSummary } from "./navigation.js";
+export { documentRole } from "./document-roles.js";
+export type {
+  ChangeConfirmation,
+  ConfirmationProvider,
+  DocumentRole,
+  FileLimitOptions,
+  SearchScope,
+} from "./layout-types.js";
+export {
+  classifySpecFirstChanges,
+  changesFromVcs,
+} from "./validators/spec-first.js";
 export { runCli } from "./cli-core.js";
 export type {
   CheckLaneConfig,

@@ -59,3 +59,19 @@ Prefer `--json` when parsing CLI output. Color is TTY-only unless
 `deno run -A npm:@lapismd/spec-validator skill install` copies the usage skill
 only to `~/.agents/skills/spec-validator/SKILL.md`. Do not install Cursor or
 project skill copies.
+
+## Counted-line architecture gate
+
+Source structure lives in the existing `src/validators/`, `src/commands/`,
+`src/platform/`, and `src/presets/` trees plus `packages/workspace-tools/src/`.
+`scripts/check-architecture.ts` enforces SV-ARCH-008 and SV-ARCH-009: new
+production and script files stay at or under 300 counted lines, new tests at or
+under 500, and existing files do not grow counted lines without updating
+`scripts/architecture-baseline.json` in the same change. Generic dump filenames
+(`utils`, `helpers`, `common`, `services`) and production imports of tests are
+rejected. Run `deno task check:architecture` with the relevant tests. Regenerate
+the baseline with `deno task check:architecture:baseline` only after an
+extraction lowers a budget; the gate refuses to write one when `CI` is true.
+
+The checker is first-party Deno automation, so it MUST stay free of Node APIs
+and remain covered by `deno task audit:runtime`.

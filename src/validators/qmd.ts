@@ -42,6 +42,28 @@ export function validate(context: ValidationContext) {
       }),
     );
   }
+  for (const [scope, selection] of Object.entries(options.scopes)) {
+    if (
+      !selection.path.startsWith(`${context.config.specDir}/`) &&
+      selection.path !== context.config.specDir
+    )
+      throw new Error(`scope ${scope} escapes canonical source`);
+    if (
+      !source.includes(`${selection.collection}:`) ||
+      !source.includes(`path: ${selection.path}`)
+    )
+      findings.push(
+        diagnostic({
+          code: "SPEC-QMD-SCOPE",
+          rule,
+          file: options.configPath,
+          subject: scope,
+          message: "declare the scoped collection and canonical source path",
+        }),
+      );
+  }
+  if (options.defaultScope && !options.scopes[options.defaultScope])
+    throw new Error("defaultScope is not declared");
   const ignorePath = path.join(context.model.repoRoot, ".gitignore");
   const ignore = existsSync(ignorePath) ? readFileSync(ignorePath, "utf8") : "";
   if (!/\.qmd\/index\.sqlite/.test(ignore)) {

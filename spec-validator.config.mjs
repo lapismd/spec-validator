@@ -39,6 +39,10 @@ export default defineConfig(headingRequirements(), {
       ],
       rules: [
         {
+          pattern: "^\\.github/workflows/",
+          chapters: ["spec/src/architecture.md"],
+        },
+        {
           pattern: "^src/(?:cli(?:-core|\\.deno)?|argv|color|reporter)\\.ts$",
           chapters: ["spec/src/cli.md"],
         },
@@ -52,7 +56,8 @@ export default defineConfig(headingRequirements(), {
           chapters: ["spec/src/cli.md"],
         },
         {
-          pattern: "^src/(?:config|profiles|presets)\\.ts$",
+          pattern:
+            "^src/(?:config(?:-validators)?|layout-types|profiles|presets)\\.ts$",
           chapters: ["spec/src/configuration.md"],
         },
         {
@@ -65,7 +70,7 @@ export default defineConfig(headingRequirements(), {
         },
         {
           pattern:
-            "^src/(?:model|tracked-files|types|diagnostics|context)\\.ts$",
+            "^src/(?:model|document-roles|navigation|book-staging|book-serving|tracked-files|types|diagnostics|context)\\.ts$",
           chapters: ["spec/src/architecture.md"],
         },
         {
@@ -73,7 +78,7 @@ export default defineConfig(headingRequirements(), {
           chapters: ["spec/src/doctor-and-init.md"],
         },
         {
-          pattern: "^src/commands/search\\.ts$",
+          pattern: "^src/commands/search(?:-host|-results)?\\.ts$",
           chapters: ["spec/src/search-and-qmd.md"],
         },
         {
@@ -101,6 +106,7 @@ export default defineConfig(headingRequirements(), {
         },
       ],
       protected: [
+        "^\\.github/workflows/",
         "^src/",
         "^spec-validator\\.config\\.(?:ts|mjs|json)$",
         "^skill/",
@@ -113,7 +119,14 @@ export default defineConfig(headingRequirements(), {
     },
   },
   check: {
-    lanes: [{ name: "tests", command: "deno", args: ["task", "test:all"] }],
+    lanes: [
+      {
+        name: "architecture",
+        command: "deno",
+        args: ["task", "check:architecture"],
+      },
+      { name: "tests", command: "deno", args: ["task", "test:all"] },
+    ],
     build: true,
     first: true,
   },

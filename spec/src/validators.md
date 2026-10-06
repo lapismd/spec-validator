@@ -12,7 +12,7 @@ Built-in validators are named modules. Each can be enabled, configured, or repla
 
 ## SV-VAL-001 — Built-in catalog
 
-**Requirement.** The package MUST ship `summary`, `governance`, `verification`, `book`, `publicSurfaces`, `storybookCatalog`, `storybookMirrors`, `repositoryLayout`, `packageDocs`, `qmd`, `markdownlint`, `packageManifest`, and `specFirst` as named built-in validators.
+**Requirement.** The package MUST ship `summary`, `governance`, `verification`, `book`, `publicSurfaces`, `storybookCatalog`, `storybookMirrors`, `repositoryLayout`, `packageDocs`, `qmd`, `markdownlint`, `packageManifest`, `fileLimits`, and `specFirst` as named built-in validators.
 
 ### Acceptance details
 
@@ -38,7 +38,18 @@ Built-in validators are named modules. Each can be enabled, configured, or repla
 
 ### Acceptance details
 
-- Verification MUST support configured sections and headers, single or grouped IDs, exact-one or at-least-one row multiplicity, reference-only traceability, and exact or prefix statuses; table governance MUST support strict configured sections and configurable declared acceptance details outside fenced examples.
+- Verification MUST support configured sections and headers, single or grouped IDs, exact-one or at-least-one row multiplicity, reference-only traceability, exact or prefix statuses and global coverage across configured files; selected verification documents MUST not define requirements.
 - Storybook catalog validation MUST support local helpers, raw examples, Svelte module scripts and markup parameters, package story discovery, and configurable boundary and language rules.
 - Storybook mirrors MUST support target, title, metadata-only content, order, and registry coverage checks when enabled; order checks MUST preserve parent index pages in nested `storySort` groups, ignore structural groups without SUMMARY chapters, and accept a matching specification group as the first top-level item.
 - Spec-first MUST support ordered path mappings, capture maps, ignored paths, conditional changed-line protection, and mapped-chapter or any-canonical modes.
+
+## SV-VAL-004 — Bounded documents and navigation
+
+**Requirement.** Opt-in file limits and nested navigation MUST enforce complete, bounded canonical document coverage.
+
+### Acceptance details
+
+- File limits MUST count physical lines and UTF-8 bytes, including fences, frontmatter and tables, and fail when either configured limit is exceeded.
+- Nested SUMMARY includes MUST stay within the source root and reject missing fragments, cycles, duplicate chapters and unindexed chapters.
+- Navigation fragments MUST remain bounded authored Markdown, while flattened build navigation MUST remain ignored.
+- Disabled limits and flat SUMMARY behavior MUST remain compatible.

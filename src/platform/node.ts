@@ -1,4 +1,7 @@
-import { spawnSync as nodeSpawnSync } from "node:child_process";
+import {
+  spawn as nodeSpawn,
+  spawnSync as nodeSpawnSync,
+} from "node:child_process";
 import {
   copyFileSync,
   existsSync,
@@ -6,6 +9,8 @@ import {
   readdirSync,
   readFileSync,
   realpathSync,
+  rmSync,
+  watch,
   writeFileSync,
 } from "node:fs";
 import os from "node:os";
@@ -62,6 +67,36 @@ const nodePlatform: RuntimePlatform = {
     };
   },
   writeFileSync: (value, contents) => writeFileSync(value, contents),
+  spawnAsync(command, args, options = {}) {
+    return new Promise((resolve) => {
+      const child = nodeSpawn(command, args, {
+        cwd: options.cwd,
+        env: options.env,
+        shell: options.shell,
+        stdio: options.stdio,
+      });
+      let stdout = "",
+        stderr = "";
+      child.stdout?.on("data", (data) => {
+        stdout += data.toString();
+      });
+      child.stderr?.on("data", (data) => {
+        stderr += data.toString();
+      });
+      child.once("error", (error) =>
+        resolve({ status: null, stdout, stderr, error }),
+      );
+      child.once("close", (status) => resolve({ status, stdout, stderr }));
+    });
+  },
+  watchPaths(paths, onChange, onError) {
+    const watchers = paths.map((value) =>
+      watch(value, { recursive: true }, onChange),
+    );
+    watchers.forEach((watcher) => watcher.on("error", onError));
+    return () => watchers.forEach((watcher) => watcher.close());
+  },
+  removeSync: (value) => rmSync(value, { recursive: true, force: true }),
 };
 
 export function installNodePlatform(): void {

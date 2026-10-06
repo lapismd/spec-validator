@@ -10,6 +10,7 @@ interface VerificationRow {
   evidence: string;
   required: string[];
   line: number;
+  file: string;
 }
 
 function sameHeader(value: string, choices: string[] | undefined): boolean {
@@ -66,6 +67,7 @@ function referenceRows(
     evidence: source,
     required: [],
     line: source.slice(0, match.index ?? 0).split(/\r?\n/).length,
+    file: "",
   }));
 }
 
@@ -73,124 +75,132 @@ export function validate(context: ValidationContext) {
   const options = context.config.validators.verification;
   if (options === false) return [];
   const rule = context.config.ruleIds.verification;
-  const file = context.model.files.find(
-    (candidate) => candidate.chapterPath === options.file,
+  const files = context.model.files.filter((candidate) =>
+    options.files.length
+      ? options.files.some((pattern) =>
+          new RegExp(pattern).test(candidate.chapterPath),
+        )
+      : candidate.chapterPath === options.file,
   );
-  if (!file) {
+  if (!files.length)
     return [
       diagnostic({
         code: "SPEC-VERIFY-MISSING",
         rule,
         file: `${context.config.specDir}/${options.file}`,
         message:
-          "verification matrix is missing; restore the canonical chapter",
+          "verification selection is empty; restore the configured matrices",
       }),
     ];
-  }
-
   const findings = [];
-  let rows: VerificationRow[] = [];
-  if (options.mode === "references") {
-    rows = referenceRows(file.source, context);
-  } else {
-    const lines = file.source.split(/\r?\n/);
-    const [start, end] = sectionRange(lines, options.section);
-    if (start < 0) {
-      findings.push(
-        diagnostic({
-          code: "SPEC-VERIFY-TABLE",
-          rule,
-          file: file.relativePath,
-          message: `verification section “${options.section}” is missing`,
-        }),
-      );
-      return findings;
-    }
-    let headerIndex = -1;
-    let idIndex = -1;
-    let statusIndex = -1;
-    let evidenceIndex = -1;
-    let requiredIndexes: number[] = [];
-    for (let index = start; index < end; index += 1) {
-      const cells = splitMarkdownTableRow(lines[index]!);
-      if (!cells) continue;
-      const candidateId = cells.findIndex((cell) =>
-        sameHeader(cell, options.headers.ids),
-      );
-      if (candidateId < 0) continue;
-      headerIndex = index;
-      idIndex = candidateId;
-      statusIndex = cells.findIndex((cell) =>
-        sameHeader(cell, options.headers.status),
-      );
-      evidenceIndex = cells.findIndex((cell) =>
-        sameHeader(cell, options.headers.evidence),
-      );
-      requiredIndexes = (options.headers.required ?? []).map((aliases) =>
-        cells.findIndex((cell) => sameHeader(cell, aliases)),
-      );
-      if (
-        (options.headers.status?.length && statusIndex < 0) ||
-        (options.requireEvidence &&
-          options.headers.evidence?.length &&
-          evidenceIndex < 0) ||
-        requiredIndexes.some((value) => value < 0)
-      ) {
+  const rows: VerificationRow[] = [];
+  for (const file of files) {
+    const fileRows: VerificationRow[] = [];
+    if (options.mode === "references") {
+      fileRows.push(...referenceRows(file.source, context));
+    } else {
+      const lines = file.source.split(/\r?\n/);
+      const [start, end] = sectionRange(lines, options.section);
+      if (start < 0) {
         findings.push(
           diagnostic({
             code: "SPEC-VERIFY-TABLE",
             rule,
             file: file.relativePath,
-            line: index + 1,
-            message: "verification table is missing a configured column",
+            message: `verification section “${options.section}” is missing`,
           }),
         );
         return findings;
       }
-      break;
-    }
-    if (headerIndex < 0) {
-      findings.push(
-        diagnostic({
-          code: "SPEC-VERIFY-TABLE",
-          rule,
-          file: file.relativePath,
-          message: "configured verification table header was not found",
-        }),
-      );
-      return findings;
-    }
-    for (let index = headerIndex + 2; index < end; index += 1) {
-      const line = lines[index]!;
-      if (!/^\s*\|/.test(line)) break;
-      const cells = splitMarkdownTableRow(line);
-      if (!cells) break;
-      const ids = idsFromCell(
-        cells[idIndex] ?? "",
-        context,
-        options.idMode === "grouped",
-      );
-      if (!ids.length) {
+      let headerIndex = -1;
+      let idIndex = -1;
+      let statusIndex = -1;
+      let evidenceIndex = -1;
+      let requiredIndexes: number[] = [];
+      for (let index = start; index < end; index += 1) {
+        const cells = splitMarkdownTableRow(lines[index]!);
+        if (!cells) continue;
+        const candidateId = cells.findIndex((cell) =>
+          sameHeader(cell, options.headers.ids),
+        );
+        if (candidateId < 0) continue;
+        headerIndex = index;
+        idIndex = candidateId;
+        statusIndex = cells.findIndex((cell) =>
+          sameHeader(cell, options.headers.status),
+        );
+        evidenceIndex = cells.findIndex((cell) =>
+          sameHeader(cell, options.headers.evidence),
+        );
+        requiredIndexes = (options.headers.required ?? []).map((aliases) =>
+          cells.findIndex((cell) => sameHeader(cell, aliases)),
+        );
+        if (
+          (options.headers.status?.length && statusIndex < 0) ||
+          (options.requireEvidence &&
+            options.headers.evidence?.length &&
+            evidenceIndex < 0) ||
+          requiredIndexes.some((value) => value < 0)
+        ) {
+          findings.push(
+            diagnostic({
+              code: "SPEC-VERIFY-TABLE",
+              rule,
+              file: file.relativePath,
+              line: index + 1,
+              message: "verification table is missing a configured column",
+            }),
+          );
+          return findings;
+        }
+        break;
+      }
+      if (headerIndex < 0) {
         findings.push(
           diagnostic({
             code: "SPEC-VERIFY-TABLE",
             rule,
             file: file.relativePath,
-            line: index + 1,
-            message:
-              "verification row must start with configured requirement IDs",
+            message: "configured verification table header was not found",
           }),
         );
-        continue;
+        return findings;
       }
-      rows.push({
-        ids,
-        status: statusIndex < 0 ? "" : (cells[statusIndex] ?? ""),
-        evidence: evidenceIndex < 0 ? "" : (cells[evidenceIndex] ?? ""),
-        required: requiredIndexes.map((column) => cells[column] ?? ""),
-        line: index + 1,
-      });
+      for (let index = headerIndex + 2; index < end; index += 1) {
+        const line = lines[index]!;
+        if (!/^\s*\|/.test(line)) break;
+        const cells = splitMarkdownTableRow(line);
+        if (!cells) break;
+        const ids = idsFromCell(
+          cells[idIndex] ?? "",
+          context,
+          options.idMode === "grouped",
+        );
+        if (!ids.length) {
+          findings.push(
+            diagnostic({
+              code: "SPEC-VERIFY-TABLE",
+              rule,
+              file: file.relativePath,
+              line: index + 1,
+              message:
+                "verification row must start with configured requirement IDs",
+            }),
+          );
+          continue;
+        }
+        fileRows.push({
+          ids,
+          status: statusIndex < 0 ? "" : (cells[statusIndex] ?? ""),
+          evidence: evidenceIndex < 0 ? "" : (cells[evidenceIndex] ?? ""),
+          required: requiredIndexes.map((column) => cells[column] ?? ""),
+          line: index + 1,
+          file: file.relativePath,
+        });
+      }
     }
+
+    rows.push(...fileRows.map((row) => ({ ...row, file: file.relativePath })));
   }
 
   const expanded = rows.flatMap((row) => row.ids.map((id) => ({ ...row, id })));
@@ -222,7 +232,7 @@ export function validate(context: ValidationContext) {
         diagnostic({
           code: "SPEC-VERIFY-ORPHAN",
           rule,
-          file: file.relativePath,
+          file: row.file,
           line: row.line,
           subject: row.id,
           message: "verification row has no canonical requirement definition",
@@ -237,7 +247,7 @@ export function validate(context: ValidationContext) {
         diagnostic({
           code: "SPEC-VERIFY-EVIDENCE",
           rule,
-          file: file.relativePath,
+          file: row.file,
           line: row.line,
           subject: row.id,
           message: "configured evidence columns must be non-empty",
@@ -255,7 +265,7 @@ export function validate(context: ValidationContext) {
           diagnostic({
             code: "SPEC-VERIFY-STATUS",
             rule,
-            file: file.relativePath,
+            file: row.file,
             line: row.line,
             subject: row.id,
             message: `unsupported status “${row.status || "(empty)"}”; use ${options.statuses.join(

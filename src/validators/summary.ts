@@ -1,3 +1,4 @@
+import { expandSummary } from "../navigation.js";
 import { diagnostic } from "../diagnostics.js";
 import { groupBy, localMarkdownTargets, toPosix } from "../model.js";
 import { existsSync, path } from "../platform/current.js";
@@ -25,7 +26,24 @@ export function validate(context: ValidationContext) {
       }),
     ];
   }
-  const targets = localMarkdownTargets(summary.source)
+  let navigation = { source: summary.source, fragments: new Set<string>() };
+  try {
+    if (
+      context.config.validators.summary &&
+      context.config.validators.summary.fragments
+    )
+      navigation = expandSummary(context.model.files);
+  } catch (error) {
+    return [
+      diagnostic({
+        code: "SPEC-SUMMARY-INCLUDE",
+        rule,
+        file: summary.relativePath,
+        message: String(error),
+      }),
+    ];
+  }
+  const targets = localMarkdownTargets(navigation.source)
     .map(withoutFragment)
     .filter((target) => target.endsWith(".md"))
     .map((target) =>
@@ -34,7 +52,10 @@ export function validate(context: ValidationContext) {
   const counts = groupBy(targets, (target) => target);
   const chapters = context.model.files
     .map((file) => file.chapterPath)
-    .filter((chapter) => chapter !== "SUMMARY.md");
+    .filter(
+      (chapter) =>
+        chapter !== "SUMMARY.md" && !navigation.fragments.has(chapter),
+    );
   for (const chapter of chapters) {
     const count = counts.get(chapter)?.length ?? 0;
     if (count !== 1) {
