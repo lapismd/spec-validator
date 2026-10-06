@@ -1,4 +1,5 @@
 import { fallback, nativeOrFallbackMessage } from "./search-host.js";
+import { scopedSearchResults } from "./search-results.js";
 export {
   looksLikeAbiMismatch,
   looksLikeMissingNativeBinding,
@@ -159,7 +160,7 @@ export async function searchCommand(
     "-n",
     String(Number.isFinite(limit) && limit > 0 ? limit : DEFAULT_LIMIT),
     "--format",
-    json ? "json" : "md",
+    json || scope ? "json" : "md",
     "--full-path",
     "--line-numbers",
   ]);
@@ -170,6 +171,29 @@ export async function searchCommand(
       search.status ?? 1,
     );
   } else if (search.stdout) {
+    if (scope) {
+      try {
+        const results = scopedSearchResults(
+          repoRoot,
+          sourceRoot,
+          selected.collection,
+          JSON.parse(search.stdout),
+        );
+        if (json)
+          reporter.writeReport({ version: 1, ok: true, exitCode: 0, results });
+        else
+          for (const row of results)
+            reporter.writeLine(
+              `## ${row.title ?? "Source"}\n\n${row.file}:${row.line ?? 1}\n\n${row.snippet ?? ""}\n`,
+            );
+      } catch (error) {
+        return fail(
+          reporter,
+          `Invalid scoped QMD output: ${error instanceof Error ? error.message : error}`,
+        );
+      }
+      return 0;
+    }
     if (reporter.json) {
       let results: unknown = search.stdout.trim();
       try {

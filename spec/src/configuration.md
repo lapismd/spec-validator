@@ -1,5 +1,7 @@
 # Configuration
 
+The package's protected change map includes extracted book lifecycle and scoped search result modules under their existing architecture and search owners.
+
 Consumers configure the CLI with `spec-validator.config.ts`, `.mjs`, or `.json` at the repository root.
 
 ## Public surface coverage

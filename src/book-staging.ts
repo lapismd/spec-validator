@@ -7,6 +7,8 @@ import {
   copyFileSync,
   readFileSync,
   writeFileSync,
+  existsSync,
+  removeSync,
 } from "./platform/current.js";
 import type { ResolvedConfig } from "./types.js";
 export function stageBook(repoRoot: string, config: ResolvedConfig): string {
@@ -17,12 +19,24 @@ export function stageBook(repoRoot: string, config: ResolvedConfig): string {
   const stage = path.join(repoRoot, "spec/.generated");
   function copy(source: string, destination: string) {
     mkdirSync(destination, { recursive: true });
-    for (const item of readdirSync(source, { withFileTypes: true })) {
+    const items = readdirSync(source, { withFileTypes: true });
+    for (const item of readdirSync(destination, { withFileTypes: true }))
+      if (!items.some((sourceItem) => sourceItem.name === item.name))
+        removeSync(path.join(destination, item.name));
+    for (const item of items) {
       if (item.isSymbolicLink())
         throw new Error(`book source cannot be a symlink: ${item.name}`);
       if (item.isDirectory())
         copy(path.join(source, item.name), path.join(destination, item.name));
-      else if (item.isFile())
+      else if (
+        item.isFile() &&
+        !(
+          item.name.endsWith(".md") &&
+          existsSync(path.join(destination, item.name)) &&
+          readFileSync(path.join(source, item.name), "utf8") ===
+            readFileSync(path.join(destination, item.name), "utf8")
+        )
+      )
         copyFileSync(
           path.join(source, item.name),
           path.join(destination, item.name),

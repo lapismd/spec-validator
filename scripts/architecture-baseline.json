@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "sourceCommit": "db3912a5a460467c75db252b5230a24ed6e4e919",
+  "sourceCommit": "4e85c8b451dea28a8c7c49778c8c8a0b3b246035",
   "limits": {
     "newProductionCountedLines": 300,
     "newTestCountedLines": 500,
@@ -87,14 +87,19 @@
       "physicalLines": 118,
       "forbiddenImportCount": 0
     },
+    "src/book-serving.ts": {
+      "countedLines": 30,
+      "physicalLines": 30,
+      "forbiddenImportCount": 0
+    },
     "src/book-staging.spec.ts": {
-      "countedLines": 52,
-      "physicalLines": 52,
+      "countedLines": 164,
+      "physicalLines": 166,
       "forbiddenImportCount": 0
     },
     "src/book-staging.ts": {
-      "countedLines": 45,
-      "physicalLines": 45,
+      "countedLines": 59,
+      "physicalLines": 59,
       "forbiddenImportCount": 0
     },
     "src/cli-core.ts": {
@@ -128,8 +133,8 @@
       "forbiddenImportCount": 0
     },
     "src/commands/build.ts": {
-      "countedLines": 30,
-      "physicalLines": 31,
+      "countedLines": 45,
+      "physicalLines": 46,
       "forbiddenImportCount": 0
     },
     "src/commands/check.ts": {
@@ -162,6 +167,16 @@
       "physicalLines": 64,
       "forbiddenImportCount": 0
     },
+    "src/commands/search-results.spec.ts": {
+      "countedLines": 22,
+      "physicalLines": 22,
+      "forbiddenImportCount": 0
+    },
+    "src/commands/search-results.ts": {
+      "countedLines": 35,
+      "physicalLines": 35,
+      "forbiddenImportCount": 0
+    },
     "src/commands/search-scopes.spec.ts": {
       "countedLines": 73,
       "physicalLines": 73,
@@ -173,8 +188,8 @@
       "forbiddenImportCount": 0
     },
     "src/commands/search.ts": {
-      "countedLines": 180,
-      "physicalLines": 188,
+      "countedLines": 204,
+      "physicalLines": 212,
       "forbiddenImportCount": 0
     },
     "src/commands/skill.spec.ts": {
@@ -273,23 +288,23 @@
       "forbiddenImportCount": 0
     },
     "src/platform/current.ts": {
-      "countedLines": 80,
-      "physicalLines": 87,
+      "countedLines": 92,
+      "physicalLines": 99,
       "forbiddenImportCount": 0
     },
     "src/platform/deno.ts": {
-      "countedLines": 130,
-      "physicalLines": 138,
+      "countedLines": 183,
+      "physicalLines": 191,
       "forbiddenImportCount": 0
     },
     "src/platform/node.ts": {
-      "countedLines": 66,
-      "physicalLines": 69,
+      "countedLines": 101,
+      "physicalLines": 104,
       "forbiddenImportCount": 0
     },
     "src/platform/types.ts": {
-      "countedLines": 60,
-      "physicalLines": 65,
+      "countedLines": 71,
+      "physicalLines": 76,
       "forbiddenImportCount": 0
     },
     "src/profiles.ts": {

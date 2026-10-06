@@ -16,8 +16,8 @@ The `spec-validator` binary is the supported entry point. Global output flags ap
 
 ### Acceptance details
 
-- `validate` MUST accept `--only` and `--skip` validator lists.
-- `first` MUST accept `--base`, `--head`, and `--file`.
+- `validate` MUST accept `--only` and `--skip` validator lists, and `first` MUST accept `--base`, `--head`, and `--file`.
+- `build` and `serve` MUST preserve authored sources; nested serving MUST rebuild edited content and newly added navigation, and staging MUST remove deleted source files.
 - `search` and `index` MUST stay outside `check`.
 - Unknown commands or flags MUST print usage and exit `2`.
 

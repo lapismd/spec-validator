@@ -20,7 +20,7 @@ Specification changes precede or accompany protected implementation. Updating an
 | CLI entry, argv, reporter, and color                      | `cli.md`                 |
 | Config schema, loader, and neutral profiles               | `configuration.md`       |
 | Built-in validators and plugin loading                    | `validators.md`          |
-| Spec model and tracked-file discovery                     | `architecture.md`        |
+| Spec model, tracked-file discovery, and book lifecycle    | `architecture.md`        |
 | Doctor, init, and `--fix`                                 | `doctor-and-init.md`     |
 | QMD search and index wrappers                             | `search-and-qmd.md`      |
 | Skill payload and install command                         | `skill-and-agents.md`    |

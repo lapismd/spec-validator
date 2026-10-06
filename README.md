@@ -156,7 +156,7 @@ compatible. `fileLimits` accepts `maxLines` and `maxBytes` and counts all author
 Markdown content.
 
 `summary: { fragments: true }` expands bounded SUMMARY include fragments and
-stages a complete book under ignored `spec/.generated/`. Scoped QMD configuration
+stages a complete book under ignored `spec/.generated/`; serving watches authored sources and restages content and navigation after edits. Scoped QMD configuration
 accepts `defaultScope` and a `scopes` map of collection/source-root pairs; search
 and index accept `--scope`. A spec-first rule may use `chapterPatterns` for
 owning-topic alternatives. The optional synchronous `confirmationProvider`

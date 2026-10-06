@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.4
+
+Keep nested book serving live after source and navigation edits, remove deleted staged pages, and resolve named-scope search results to absolute source files with their original line numbers.
+
 ## 0.1.3
 
 Upload the exact validated tarball from the hidden release directory, retaining the artifact-only trusted publication boundary.

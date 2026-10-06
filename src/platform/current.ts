@@ -81,6 +81,18 @@ export const spawnSync = (
 ) => currentPlatform().spawnSync(command, args, options);
 export const writeFileSync = (value: string, contents: string): void =>
   currentPlatform().writeFileSync(value, contents);
+export const spawnAsync = (
+  command: string,
+  args: string[],
+  options?: CommandOptions,
+) => currentPlatform().spawnAsync(command, args, options);
+export const watchPaths = (
+  paths: string[],
+  onChange: () => void,
+  onError: (error: Error) => void,
+) => currentPlatform().watchPaths(paths, onChange, onError);
+export const removeSync = (value: string) =>
+  currentPlatform().removeSync(value);
 export const fileURLToPath = (url: string | URL): string =>
   currentPlatform().path.fromFileUrl(url);
 export const pathToFileURL = (value: string): URL =>

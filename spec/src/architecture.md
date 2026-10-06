@@ -24,7 +24,7 @@ The repository is Deno-first while publishing a Node-compatible CLI and TypeScri
 
 - The published npm bin MUST resolve to `dist/cli.js` and start with a Node shebang, while the repository CLI MUST also run directly under Deno.
 - `defineConfig` MUST compose typed configuration fragments, including definition and reference matchers, exact repository-layout entries, verification multiplicity, mirror link styles, and table acceptance-detail policy; neutral profiles MUST provide reusable defaults without embedding repository policy.
-- Disabled validators MUST NOT run during `validate` or `check`.
+- Disabled validators MUST NOT run during `validate` or `check`; live book serving MUST use the installed runtime adapter for asynchronous commands and source watching.
 - The registry MUST accept extra plugin modules that export `name` and `validate`, and package builds MUST remove stale node output before compilation.
 
 ## SV-ARCH-002 — Tracked-file discovery

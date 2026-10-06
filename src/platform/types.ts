@@ -61,5 +61,16 @@ export interface RuntimePlatform {
     args: string[],
     options?: CommandOptions,
   ): CommandResult;
+  spawnAsync(
+    command: string,
+    args: string[],
+    options?: CommandOptions,
+  ): Promise<CommandResult>;
+  watchPaths(
+    paths: string[],
+    onChange: () => void,
+    onError: (error: Error) => void,
+  ): () => void;
+  removeSync(path: string): void;
   writeFileSync(path: string, value: string): void;
 }

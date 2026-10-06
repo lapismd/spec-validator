@@ -70,7 +70,7 @@ export default defineConfig(headingRequirements(), {
         },
         {
           pattern:
-            "^src/(?:model|document-roles|navigation|book-staging|tracked-files|types|diagnostics|context)\\.ts$",
+            "^src/(?:model|document-roles|navigation|book-staging|book-serving|tracked-files|types|diagnostics|context)\\.ts$",
           chapters: ["spec/src/architecture.md"],
         },
         {
@@ -78,7 +78,7 @@ export default defineConfig(headingRequirements(), {
           chapters: ["spec/src/doctor-and-init.md"],
         },
         {
-          pattern: "^src/commands/search(?:-host)?\\.ts$",
+          pattern: "^src/commands/search(?:-host|-results)?\\.ts$",
           chapters: ["spec/src/search-and-qmd.md"],
         },
         {

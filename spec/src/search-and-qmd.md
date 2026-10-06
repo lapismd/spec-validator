@@ -16,7 +16,7 @@ QMD is a local discovery cache over canonical Markdown. It is not an authority a
 ### Acceptance details
 
 - The tracked `.qmd/index.yml` MUST name the configured collections and index canonical Markdown; optional named scopes MUST select their declared collection and equivalent source root, with an explicit default scope.
-- Lexical `search` MUST run `qmd update` then `qmd search`.
+- Lexical `search` MUST run `qmd update` then `qmd search`; named-scope results MUST resolve to absolute files within that source root while retaining QMD source line numbers.
 - `--semantic` MUST run `qmd embed` then `qmd vsearch`.
 - `check` and CI lanes MUST NOT invoke `search` or `index`.
 
