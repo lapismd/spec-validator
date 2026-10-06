@@ -14,6 +14,8 @@ import type {
   SpecModel,
 } from "./types.js";
 
+import { documentRole } from "./document-roles.js";
+
 export const NORMATIVE_PATTERN = /\b(?:MUST|MUST NOT|SHOULD|SHOULD NOT|MAY)\b/;
 
 export function groupBy<T>(
@@ -383,7 +385,7 @@ export function createSpecModel(
     source: readFileSync(absolutePath, "utf8"),
   }));
   const canonicalFiles = files.filter(
-    (file) => !["SUMMARY.md", "verification.md"].includes(file.chapterPath),
+    (file) => documentRole(file, config) === "contract",
   );
   const parsed = canonicalFiles.map((file) =>
     parseRequirementFile(file, config),

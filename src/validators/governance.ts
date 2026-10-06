@@ -286,7 +286,9 @@ export function validate(context: ValidationContext) {
 
   const changeMap = options.changeMap
     ? context.model.canonicalFiles.find(
-        (file) => file.chapterPath === "spec-governance.md",
+        (file) =>
+          file.chapterPath === "spec-governance.md" ||
+          file.chapterPath.endsWith("/spec-governance.md"),
       )
     : undefined;
   if (changeMap) {

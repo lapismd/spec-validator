@@ -42,3 +42,7 @@ The `spec-validator` binary is the supported entry point. Global output flags ap
 - The overall exit code MUST be the first non-zero lane status.
 - `search` and `index` MUST remain available as separate commands.
 - Pretty output MUST name each lane and result, while JSON output MUST contain ordered structured lane results with captured output.
+
+## Nested book generation
+
+The opt-in nested-summary mode expands bounded include directives for navigation fragments. Build stages sources and the expanded SUMMARY into ignored output before running mdBook; canonical source is never rewritten. Search and index accept `--scope` only when that scope is declared. Existing flat books and unscoped commands retain their behavior. Explicit JJ ranges and default merge checks use JJ rather than requiring a colocated Git checkout.

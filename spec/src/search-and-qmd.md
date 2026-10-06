@@ -15,7 +15,7 @@ QMD is a local discovery cache over canonical Markdown. It is not an authority a
 
 ### Acceptance details
 
-- The tracked `.qmd/index.yml` MUST name the configured collection and index `spec/src/**/*.md`.
+- The tracked `.qmd/index.yml` MUST name the configured collections and index canonical Markdown; optional named scopes MUST select their declared collection and equivalent source root, with an explicit default scope.
 - Lexical `search` MUST run `qmd update` then `qmd search`.
 - `--semantic` MUST run `qmd embed` then `qmd vsearch`.
 - `check` and CI lanes MUST NOT invoke `search` or `index`.
@@ -29,4 +29,4 @@ QMD is a local discovery cache over canonical Markdown. It is not an authority a
 - The wrapper MUST resolve the consumer-local `node_modules/.bin/qmd` and capture its stdout and stderr.
 - A runtime ABI mismatch MUST identify the active Deno or Node compatibility host and tell the operator to reinstall with Deno 2.9.5.
 - A missing native binding MUST tell the operator to allow `better-sqlite3` and `node-llama-cpp` scripts in `deno.json` and reinstall with Deno.
-- The fallback MUST be `rg -n -i --glob '*.md' '<query>' spec/src`.
+- The fallback MUST be `rg -n -i --glob '*.md' '<query>' '<selected-source-root>'`, defaulting to spec/src for unscoped consumers.

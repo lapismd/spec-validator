@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1
+
+Add optional document roles, globally checked split verification, physical-line and UTF-8-byte limits, bounded nested navigation, scoped lexical/semantic search, mapped topic alternatives and fresh consumer-validated unchanged-contract confirmations. Explicit JJ ranges and default merge checks now use JJ without requiring a colocated Git checkout.
+
 ## 0.1.0 - 2026-08-27
 
 First public npm release of the configurable specification validator.

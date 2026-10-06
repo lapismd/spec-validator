@@ -1,6 +1,6 @@
 {
   "name": "@lapismd/spec-validator",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Configurable specification, Storybook-catalog, QMD, and spec-first validation CLI for LapisMD repositories.",
   "keywords": [
     "specification",

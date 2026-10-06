@@ -52,7 +52,8 @@ export default defineConfig(headingRequirements(), {
           chapters: ["spec/src/cli.md"],
         },
         {
-          pattern: "^src/(?:config|profiles|presets)\\.ts$",
+          pattern:
+            "^src/(?:config(?:-validators)?|layout-types|profiles|presets)\\.ts$",
           chapters: ["spec/src/configuration.md"],
         },
         {
@@ -65,7 +66,7 @@ export default defineConfig(headingRequirements(), {
         },
         {
           pattern:
-            "^src/(?:model|tracked-files|types|diagnostics|context)\\.ts$",
+            "^src/(?:model|document-roles|navigation|book-staging|tracked-files|types|diagnostics|context)\\.ts$",
           chapters: ["spec/src/architecture.md"],
         },
         {
@@ -73,7 +74,7 @@ export default defineConfig(headingRequirements(), {
           chapters: ["spec/src/doctor-and-init.md"],
         },
         {
-          pattern: "^src/commands/search\\.ts$",
+          pattern: "^src/commands/search(?:-host)?\\.ts$",
           chapters: ["spec/src/search-and-qmd.md"],
         },
         {

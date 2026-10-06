@@ -33,7 +33,7 @@ The repository is Deno-first while publishing a Node-compatible CLI and TypeScri
 
 ### Acceptance details
 
-- Discovery MUST run `jj --no-pager file list -r @` first.
+- Discovery MUST run `jj --no-pager file list -r @` first; configured document roles MUST restrict requirement definitions without suppressing document/link validation.
 - Discovery MUST fall back to `git ls-files` when Jujutsu is unavailable.
 - An unreadable working copy MUST produce exit code `2` rather than an empty success.
 - Paths MUST be reported with POSIX separators.
@@ -131,3 +131,5 @@ enforces size, naming, and production isolation from tests only.
 `deno task test:all` own it. Both lanes stay Deno-owned: the checker is
 first-party Deno automation under SV-ARCH-005 and is audited by
 `scripts/check-runtime-boundaries.ts`.
+
+The bounded-document delivery extracts validator defaults, document-role classification and JJ diff parsing into owned modules before recording the updated counted-line baseline. New modules remain inside the 300-line budget.

@@ -25,6 +25,7 @@
 | SV-VAL-001  | Implemented | built-in validator registry; focused validator regression tests                |
 | SV-VAL-002  | Implemented | `src/commands/list.ts`; validator options                                      |
 | SV-VAL-003  | Implemented | nested index and structural-group order tests; five consumer parity migrations |
+| SV-VAL-004  | Implemented | `src/validators/document-layout.spec.ts`; `src/navigation.spec.ts`             |
 | SV-CLI-001  | Implemented | `src/cli.ts`; symlink-bin and strict command-schema tests                      |
 | SV-CLI-002  | Implemented | `src/color.ts`; `src/reporter.ts`                                              |
 | SV-CLI-003  | Implemented | `src/commands/check.ts`                                                        |

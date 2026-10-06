@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "sourceCommit": "3b43173ab60269004b5ce32a2a269f805053da7c",
+  "sourceCommit": "db3912a5a460467c75db252b5230a24ed6e4e919",
   "limits": {
     "newProductionCountedLines": 300,
     "newTestCountedLines": 500,
@@ -87,6 +87,16 @@
       "physicalLines": 118,
       "forbiddenImportCount": 0
     },
+    "src/book-staging.spec.ts": {
+      "countedLines": 52,
+      "physicalLines": 52,
+      "forbiddenImportCount": 0
+    },
+    "src/book-staging.ts": {
+      "countedLines": 45,
+      "physicalLines": 45,
+      "forbiddenImportCount": 0
+    },
     "src/cli-core.ts": {
       "countedLines": 94,
       "physicalLines": 95,
@@ -118,13 +128,13 @@
       "forbiddenImportCount": 0
     },
     "src/commands/build.ts": {
-      "countedLines": 28,
-      "physicalLines": 29,
+      "countedLines": 30,
+      "physicalLines": 31,
       "forbiddenImportCount": 0
     },
     "src/commands/check.ts": {
-      "countedLines": 76,
-      "physicalLines": 80,
+      "countedLines": 81,
+      "physicalLines": 85,
       "forbiddenImportCount": 0
     },
     "src/commands/doctor.ts": {
@@ -133,8 +143,8 @@
       "forbiddenImportCount": 0
     },
     "src/commands/first.ts": {
-      "countedLines": 107,
-      "physicalLines": 111,
+      "countedLines": 108,
+      "physicalLines": 112,
       "forbiddenImportCount": 0
     },
     "src/commands/init.ts": {
@@ -147,14 +157,24 @@
       "physicalLines": 40,
       "forbiddenImportCount": 0
     },
+    "src/commands/search-host.ts": {
+      "countedLines": 59,
+      "physicalLines": 64,
+      "forbiddenImportCount": 0
+    },
+    "src/commands/search-scopes.spec.ts": {
+      "countedLines": 73,
+      "physicalLines": 73,
+      "forbiddenImportCount": 0
+    },
     "src/commands/search.spec.ts": {
       "countedLines": 49,
       "physicalLines": 54,
       "forbiddenImportCount": 0
     },
     "src/commands/search.ts": {
-      "countedLines": 216,
-      "physicalLines": 230,
+      "countedLines": 180,
+      "physicalLines": 188,
       "forbiddenImportCount": 0
     },
     "src/commands/skill.spec.ts": {
@@ -172,14 +192,19 @@
       "physicalLines": 118,
       "forbiddenImportCount": 0
     },
+    "src/config-validators.ts": {
+      "countedLines": 124,
+      "physicalLines": 124,
+      "forbiddenImportCount": 0
+    },
     "src/config.spec.ts": {
       "countedLines": 76,
       "physicalLines": 82,
       "forbiddenImportCount": 0
     },
     "src/config.ts": {
-      "countedLines": 316,
-      "physicalLines": 334,
+      "countedLines": 224,
+      "physicalLines": 241,
       "forbiddenImportCount": 0
     },
     "src/context.ts": {
@@ -202,9 +227,14 @@
       "physicalLines": 36,
       "forbiddenImportCount": 0
     },
+    "src/document-roles.ts": {
+      "countedLines": 19,
+      "physicalLines": 19,
+      "forbiddenImportCount": 0
+    },
     "src/index-core.ts": {
-      "countedLines": 23,
-      "physicalLines": 23,
+      "countedLines": 36,
+      "physicalLines": 36,
       "forbiddenImportCount": 0
     },
     "src/index.deno.ts": {
@@ -217,9 +247,24 @@
       "physicalLines": 5,
       "forbiddenImportCount": 0
     },
+    "src/layout-types.ts": {
+      "countedLines": 46,
+      "physicalLines": 46,
+      "forbiddenImportCount": 0
+    },
     "src/model.ts": {
-      "countedLines": 387,
-      "physicalLines": 408,
+      "countedLines": 388,
+      "physicalLines": 410,
+      "forbiddenImportCount": 0
+    },
+    "src/navigation.spec.ts": {
+      "countedLines": 44,
+      "physicalLines": 44,
+      "forbiddenImportCount": 0
+    },
+    "src/navigation.ts": {
+      "countedLines": 48,
+      "physicalLines": 48,
       "forbiddenImportCount": 0
     },
     "src/package-contract.spec.ts": {
@@ -268,13 +313,28 @@
       "forbiddenImportCount": 0
     },
     "src/types.ts": {
-      "countedLines": 369,
+      "countedLines": 368,
       "physicalLines": 392,
       "forbiddenImportCount": 0
     },
     "src/validators/book.ts": {
-      "countedLines": 77,
-      "physicalLines": 79,
+      "countedLines": 93,
+      "physicalLines": 95,
+      "forbiddenImportCount": 0
+    },
+    "src/validators/change-confirmations.spec.ts": {
+      "countedLines": 74,
+      "physicalLines": 74,
+      "forbiddenImportCount": 0
+    },
+    "src/validators/document-layout.spec.ts": {
+      "countedLines": 93,
+      "physicalLines": 93,
+      "forbiddenImportCount": 0
+    },
+    "src/validators/file-limits.ts": {
+      "countedLines": 34,
+      "physicalLines": 34,
       "forbiddenImportCount": 0
     },
     "src/validators/governance.spec.ts": {
@@ -283,13 +343,13 @@
       "forbiddenImportCount": 0
     },
     "src/validators/governance.ts": {
-      "countedLines": 314,
-      "physicalLines": 324,
+      "countedLines": 316,
+      "physicalLines": 326,
       "forbiddenImportCount": 0
     },
     "src/validators/index.ts": {
-      "countedLines": 61,
-      "physicalLines": 66,
+      "countedLines": 63,
+      "physicalLines": 68,
       "forbiddenImportCount": 0
     },
     "src/validators/markdownlint.ts": {
@@ -313,8 +373,8 @@
       "forbiddenImportCount": 0
     },
     "src/validators/qmd.ts": {
-      "countedLines": 68,
-      "physicalLines": 70,
+      "countedLines": 90,
+      "physicalLines": 92,
       "forbiddenImportCount": 0
     },
     "src/validators/repository-layout.spec.ts": {
@@ -327,14 +387,19 @@
       "physicalLines": 69,
       "forbiddenImportCount": 0
     },
+    "src/validators/spec-first-vcs.ts": {
+      "countedLines": 145,
+      "physicalLines": 148,
+      "forbiddenImportCount": 0
+    },
     "src/validators/spec-first.spec.ts": {
       "countedLines": 65,
       "physicalLines": 71,
       "forbiddenImportCount": 0
     },
     "src/validators/spec-first.ts": {
-      "countedLines": 312,
-      "physicalLines": 326,
+      "countedLines": 210,
+      "physicalLines": 221,
       "forbiddenImportCount": 0
     },
     "src/validators/storybook-catalog.spec.ts": {
@@ -358,8 +423,8 @@
       "forbiddenImportCount": 0
     },
     "src/validators/summary.ts": {
-      "countedLines": 87,
-      "physicalLines": 90,
+      "countedLines": 108,
+      "physicalLines": 111,
       "forbiddenImportCount": 0
     },
     "src/validators/verification.spec.ts": {
@@ -368,8 +433,8 @@
       "forbiddenImportCount": 0
     },
     "src/validators/verification.ts": {
-      "countedLines": 261,
-      "physicalLines": 270,
+      "countedLines": 271,
+      "physicalLines": 280,
       "forbiddenImportCount": 0
     },
     "tests/architecture.test.ts": {

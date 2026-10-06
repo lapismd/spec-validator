@@ -1,16 +1,18 @@
+import { loadResolvedConfig } from "../config.js";
+import { stageBook } from "../book-staging.js";
 import { assertCommandArgs } from "../argv.js";
 import { runtime, spawnSync } from "../platform/current.js";
 import type { Reporter } from "../reporter.js";
 
-export function buildCommand(
+export async function buildCommand(
   repoRoot: string,
   argv: string[],
   reporter: Reporter,
   mode: "build" | "serve" = "build",
-): number {
+): Promise<number> {
   assertCommandArgs(argv);
-  const args =
-    mode === "serve" ? ["serve", "./spec", "--open"] : ["build", "./spec"];
+  const book = stageBook(repoRoot, await loadResolvedConfig(repoRoot));
+  const args = mode === "serve" ? ["serve", book, "--open"] : ["build", book];
   const result = spawnSync("mdbook", args, {
     cwd: repoRoot,
     stdio: reporter.json ? ["ignore", "pipe", "pipe"] : "inherit",

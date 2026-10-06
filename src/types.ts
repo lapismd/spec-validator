@@ -1,3 +1,11 @@
+import type {
+  DocumentRole,
+  SummaryOptions,
+  FileLimitOptions,
+  QmdOptions,
+  SpecFirstOptions,
+} from "./layout-types.js";
+
 export interface Diagnostic {
   code: string;
   rule: string;
@@ -89,6 +97,7 @@ export type ColorMode = "auto" | "always" | "never";
 /** Validator-level defaults. Exact `diagnostics` entries override these values. */
 export interface RuleIds {
   summary: string;
+  fileLimits: string;
   governance: string;
   verification: string;
   book: string;
@@ -110,6 +119,7 @@ export type DiagnosticRuleMap = Record<string, string>;
 export interface SpecFirstRule {
   pattern: string;
   chapters?: string[];
+  chapterPatterns?: string[];
   captureMap?: Record<string, string[]>;
   captureGroup?: number;
   defaultChapters?: string[];
@@ -125,6 +135,7 @@ export interface CheckLaneConfig {
 export interface VerificationOptions {
   mode?: "table" | "references";
   file?: string;
+  files?: string[];
   section?: string;
   headers?: {
     ids: string[];
@@ -141,7 +152,8 @@ export interface VerificationOptions {
 }
 
 export interface ValidatorOptions {
-  summary?: boolean | Record<string, never>;
+  summary?: boolean | SummaryOptions;
+  fileLimits?: boolean | FileLimitOptions;
   governance?:
     | boolean
     | {
@@ -200,7 +212,7 @@ export interface ValidatorOptions {
         chapterTemplate?: string;
         identityTemplate?: string;
       };
-  qmd?: boolean | { collection?: string; configPath?: string };
+  qmd?: boolean | QmdOptions;
   markdownlint?: boolean | { config?: string };
   packageManifest?:
     | boolean
@@ -212,16 +224,7 @@ export interface ValidatorOptions {
         manifest?: Record<string, unknown>;
         manifestPath?: string;
       };
-  specFirst?:
-    | boolean
-    | {
-        mode?: "mapped" | "any";
-        canonicalPattern?: string;
-        ignore?: string[];
-        rules?: SpecFirstRule[];
-        protected?: string[];
-        conditional?: Record<string, string>;
-      };
+  specFirst?: boolean | SpecFirstOptions;
 }
 
 export interface UserConfig {
@@ -229,6 +232,7 @@ export interface UserConfig {
   idPattern?: string | RegExp;
   referencePattern?: string | RegExp;
   specDir?: string;
+  documentRoles?: DocumentRole[];
   requirementStyle?: RequirementStyle;
   tableSection?: string;
   headingTemplate?: string;
@@ -252,6 +256,7 @@ export interface ResolvedConfig {
   idPattern: RegExp;
   referencePattern: RegExp;
   specDir: string;
+  documentRoles: DocumentRole[];
   requirementStyle: RequirementStyle;
   tableSection: string | null;
   headingTemplate: string;
@@ -271,7 +276,8 @@ export interface ResolvedConfig {
 }
 
 export interface ResolvedValidators {
-  summary: false | Record<string, never>;
+  summary: false | Required<SummaryOptions>;
+  fileLimits: false | Required<FileLimitOptions>;
   governance:
     | false
     | {
@@ -332,7 +338,7 @@ export interface ResolvedValidators {
         chapterTemplate: string;
         identityTemplate: string;
       };
-  qmd: false | { collection: string; configPath: string };
+  qmd: false | Required<QmdOptions>;
   markdownlint: false | { config: string };
   packageManifest:
     | false
@@ -346,14 +352,8 @@ export interface ResolvedValidators {
       };
   specFirst:
     | false
-    | {
-        mode: "mapped" | "any";
-        canonicalPattern: string;
-        ignore: string[];
-        rules: SpecFirstRule[];
-        protected: string[];
-        conditional: Record<string, string>;
-      };
+    | (Required<Omit<SpecFirstOptions, "confirmationProvider">> &
+        Pick<SpecFirstOptions, "confirmationProvider">);
 }
 
 export interface OutputOptions {

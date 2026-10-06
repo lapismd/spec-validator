@@ -53,7 +53,7 @@ Consumers configure the CLI with `spec-validator.config.ts`, `.mjs`, or `.json` 
 - The package MUST NOT contain repository-named presets or foreign path maps.
 - Consumer configuration MUST be able to express mapped or any-chapter spec-first policy, grouped verification rows and row multiplicity, repository-specific Storybook roots and SUMMARY link styles, exact forbidden filesystem entries, and repository-owned table and acceptance-detail dialects.
 - Structured additional lanes MUST use separate `name`, `command`, and `args` fields without shell-word splitting, including canonical Deno task lanes.
-- A repository-specific check MAY remain a named lane until a reusable validator exists.
+- A repository-specific check MAY remain a named lane until a reusable validator exists; document-role patterns, verification file patterns, physical-line/UTF-8-byte budgets, nested navigation and named search scopes MUST remain opt-in consumer configuration.
 
 ## Repository-owned lanes
 
