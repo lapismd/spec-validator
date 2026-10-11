@@ -1,3 +1,4 @@
+import { resolveValidators } from "./config-validators.js";
 import { createJiti } from "jiti";
 
 import { existsSync, path, readFileSync } from "./platform/current.js";
@@ -17,6 +18,7 @@ export const CONFIG_FILES = [
 
 const VALIDATOR_NAMES = [
   "summary",
+  "fileLimits",
   "governance",
   "verification",
   "book",
@@ -33,6 +35,7 @@ const VALIDATOR_NAMES = [
 
 const EMPTY_RULE_IDS: RuleIds = {
   summary: "",
+  fileLimits: "",
   governance: "",
   verification: "",
   book: "",
@@ -120,15 +123,6 @@ function asRegExp(
   return match ? new RegExp(match[1]!, match[2]) : new RegExp(value);
 }
 
-function resolveValidator<T extends object>(
-  value: boolean | object | undefined,
-  defaults: T,
-): T | false {
-  if (value === false || value === undefined) return false;
-  if (value === true) return { ...defaults };
-  return { ...defaults, ...value } as T;
-}
-
 function diagnosticMappingExists(
   diagnostics: Record<string, string>,
   validator: string,
@@ -211,101 +205,14 @@ export function resolveConfig(user: UserConfig): ResolvedConfig {
   );
   const input = user.validators ?? ({} as ValidatorOptions);
 
-  const validators: ResolvedValidators = {
-    summary: resolveValidator(input.summary, {}),
-    governance: resolveValidator(input.governance, {
-      extras: [],
-      normative: true,
-      proseLimits: true,
-      acceptance: true,
-      acceptanceScope: "all" as const,
-      acceptanceIntroduction: "forbid" as const,
-      acceptanceAtomic: true,
-      acceptanceColocation: true,
-      references: true,
-      changeMap: true,
-    }),
-    verification: resolveValidator(input.verification, {
-      mode: "table" as const,
-      file: "verification.md",
-      headers: {
-        ids: ["Requirement", "Requirements", "ID"],
-        status: ["Status", "Audit state"],
-        evidence: ["Evidence", "Primary automated evidence"],
-        required: [],
-      },
-      idMode: "single" as const,
-      statuses: ["Implemented", "In progress", "Partial"],
-      statusMatch: "exact" as const,
-      rowMultiplicity: "exactly-one" as const,
-      rejectOrphans: true,
-      requireEvidence: true,
-    }),
-    book: resolveValidator(input.book, { src: "src", buildDir: "book" }),
-    publicSurfaces: resolveValidator(input.publicSurfaces, {
-      map: "spec/public-surfaces.json",
-      roots: ["src"],
-      requireCoverage: true,
-    }),
-    storybookCatalog: resolveValidator(input.storybookCatalog, {
-      roots: ["src"],
-      packageRoots: [],
-      storyOnlyName:
-        "(?:Demo|Harness|Fixture|Story(?:View|Surface|Frame|Control)?)$",
-      forbiddenSource:
-        "\\b(?:[A-Z][A-Za-z0-9]*(?:Demo|Harness|Fixture|Story(?:View|Surface|Frame|Control)?))\\b|\\bargs\\s*\\.",
-      plainTextLanguages: ["html", "markup", "svelte"],
-    }),
-    storybookMirrors: resolveValidator(input.storybookMirrors, {
-      style: "src-spec-mdx" as const,
-      directory: "src/spec",
-      titlePrefix: "Specification",
-      verifyTarget: true,
-      verifyTitle: false,
-      verifyContent: false,
-      previewPath: ".storybook/preview.ts",
-      verifyOrder: false,
-      registryEntryTemplate: 'source: "<chapter>"',
-    }),
-    repositoryLayout: resolveValidator(input.repositoryLayout, {
-      requiredFiles: [],
-      forbiddenEntries: [],
-      forbiddenPaths: [],
-      allowedRootMarkdown: [],
-    }),
-    packageDocs: resolveValidator(input.packageDocs, {
-      root: "packages",
-      packagePattern: "^(?:[^-]+-)?plugin-(.+)$",
-      chapterTemplate: "plugins/<name>.md",
-      identityTemplate: "<name>",
-    }),
-    qmd: resolveValidator(input.qmd, {
-      collection: "spec",
-      configPath: ".qmd/index.yml",
-    }),
-    markdownlint: resolveValidator(input.markdownlint, {
-      config: ".markdownlint-cli2.jsonc",
-    }),
-    packageManifest: resolveValidator(input.packageManifest, {
-      privateAllowed: true,
-      portableDependencies: false,
-      manifestPath: "manifest.json",
-    }),
-    specFirst: resolveValidator(input.specFirst, {
-      mode: "mapped" as const,
-      canonicalPattern: "^spec/src/(?!SUMMARY\\.md$).+\\.md$",
-      ignore: [],
-      rules: [],
-      protected: [],
-      conditional: {},
-    }),
-  };
+  const validators = resolveValidators(input);
 
   const config: ResolvedConfig = {
     name: user.name ?? "custom",
     idPattern,
     referencePattern,
     specDir: user.specDir ?? "spec/src",
+    documentRoles: user.documentRoles ?? [],
     requirementStyle: user.requirementStyle ?? "heading",
     tableSection: user.tableSection ?? null,
     headingTemplate: user.headingTemplate ?? "## <ID> — <surface>",

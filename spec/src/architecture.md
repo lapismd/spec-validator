@@ -13,6 +13,8 @@ The repository is Deno-first while publishing a Node-compatible CLI and TypeScri
 | Deno workspace         | Architecture    | SV-ARCH-005 |
 | Public package         | Architecture    | SV-ARCH-006 |
 | Trusted publication    | Architecture    | SV-ARCH-007 |
+| Counted-line budgets   | Architecture    | SV-ARCH-008 |
+| Module isolation       | Architecture    | SV-ARCH-009 |
 
 ## SV-ARCH-001 — CLI and registry
 
@@ -22,7 +24,7 @@ The repository is Deno-first while publishing a Node-compatible CLI and TypeScri
 
 - The published npm bin MUST resolve to `dist/cli.js` and start with a Node shebang, while the repository CLI MUST also run directly under Deno.
 - `defineConfig` MUST compose typed configuration fragments, including definition and reference matchers, exact repository-layout entries, verification multiplicity, mirror link styles, and table acceptance-detail policy; neutral profiles MUST provide reusable defaults without embedding repository policy.
-- Disabled validators MUST NOT run during `validate` or `check`.
+- Disabled validators MUST NOT run during `validate` or `check`; live book serving MUST use the installed runtime adapter for asynchronous commands and source watching.
 - The registry MUST accept extra plugin modules that export `name` and `validate`, and package builds MUST remove stale node output before compilation.
 
 ## SV-ARCH-002 — Tracked-file discovery
@@ -31,7 +33,7 @@ The repository is Deno-first while publishing a Node-compatible CLI and TypeScri
 
 ### Acceptance details
 
-- Discovery MUST run `jj --no-pager file list -r @` first.
+- Discovery MUST run `jj --no-pager file list -r @` first; configured document roles MUST restrict requirement definitions without suppressing document/link validation.
 - Discovery MUST fall back to `git ls-files` when Jujutsu is unavailable.
 - An unreadable working copy MUST produce exit code `2` rather than an empty success.
 - Paths MUST be reported with POSIX separators.
@@ -90,3 +92,48 @@ The repository is Deno-first while publishing a Node-compatible CLI and TypeScri
 - The package gate MUST install from the frozen Deno lockfile, run the canonical checks and tests, and upload exactly one npm tarball.
 - The publication job MUST download that verified tarball and use the protected `npm-production` environment with GitHub OIDC publish-only permission rather than an npm token.
 - A successful or retry-safe already-published release MUST verify the installed version, registry signatures, and Sigstore provenance, then create or retain a non-draft, non-prerelease GitHub Release for the exact existing tag.
+
+## SV-ARCH-008 — Counted-line budgets
+
+**Requirement.** First-party source MUST stay inside counted-line budgets enforced by a Deno architecture checker that fails closed when its baseline is missing.
+
+### Acceptance details
+
+- Counted lines MUST be physical lines minus blank and comment-only lines, matching the shared LapisMD metric.
+- New production and script files MUST stay at or under 300 counted lines and new tests at or under 500.
+- A baselined file MUST NOT grow counted lines without an updated `scripts/architecture-baseline.json` in the same change.
+- A recorded budget MUST fail when the current size plus twenty is still below it, and `--write-baseline` MUST be refused when `CI` is true.
+
+## SV-ARCH-009 — Module isolation
+
+**Requirement.** Production source MUST stay isolated from tests and MUST NOT use generic dump filenames.
+
+### Acceptance details
+
+- A production module MUST NOT import a `.test` or `.spec` specifier.
+- Files and directories named `utils`, `helpers`, `common`, or `services` MUST be rejected.
+- The checker MUST audit `src/`, `scripts/`, `tests/`, and `packages/workspace-tools/src/` while excluding its own fixtures.
+
+## Counted-line ratchet
+
+`src/validators/`, `src/commands/`, `src/platform/`, and `src/presets/` already
+own the repository structure, so SV-ARCH-008 and SV-ARCH-009 add a size and
+naming ratchet rather than a folder taxonomy. `scripts/check-architecture.ts`
+records the current budgets in `scripts/architecture-baseline.json`; a later
+change that needs room MUST extract into a named module and lower the budget in
+the same change.
+
+The package claims no import-direction layer matrix. The surfaces in each
+coverage table are public boundaries, not layers, so the architecture checker
+enforces size, naming, and production isolation from tests only.
+
+`deno task check:architecture` runs the gate and `deno task check` and
+`deno task test:all` own it. Both lanes stay Deno-owned: the checker is
+first-party Deno automation under SV-ARCH-005 and is audited by
+`scripts/check-runtime-boundaries.ts`.
+
+The bounded-document delivery extracts validator defaults, document-role classification and JJ diff parsing into owned modules before recording the updated counted-line baseline. New modules remain inside the 300-line budget.
+
+Release qualification installs mdBook 0.5.2 before canonical checks and the actual nested-book regression. The failed v0.1.1 package gate exposed an absent CI binary, not a passing substitute; v0.1.2 retains that regression and qualifies the explicit prerequisite.
+
+The verified release tarball lives under `.release/`; artifact upload explicitly includes hidden files while restricting its path to that one tarball pattern. The v0.1.2 gate passed all tests but artifact upload excluded the hidden directory; v0.1.3 preserves the failed tag and the exact validated artifact boundary.

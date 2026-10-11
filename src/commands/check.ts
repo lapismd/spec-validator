@@ -1,3 +1,4 @@
+import { stageBook } from "../book-staging.js";
 import { assertCommandArgs } from "../argv.js";
 import { loadResolvedConfig } from "../config.js";
 import { runtime, spawnSync } from "../platform/current.js";
@@ -49,7 +50,11 @@ export async function checkCommand(
   if (lanes.every((lane) => lane.ok) && config.check.build) {
     lanes.push(
       runLane(
-        { name: "mdbook", command: "mdbook", args: ["build", "./spec"] },
+        {
+          name: "mdbook",
+          command: "mdbook",
+          args: ["build", stageBook(repoRoot, config)],
+        },
         repoRoot,
       ),
     );

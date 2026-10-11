@@ -130,6 +130,59 @@ const denoPlatform: RuntimePlatform = {
   readdirSync: (value) => [...Deno.readDirSync(value)].map(directoryEntry),
   realpathSync: Deno.realPathSync,
   spawnSync,
+  async spawnAsync(command, args, options = {}) {
+    const inherit = options.stdio === "inherit";
+    try {
+      const shell = options.shell && Deno.build.os === "windows";
+      const result = await new Deno.Command(shell ? "cmd.exe" : command, {
+        args: shell ? ["/d", "/s", "/c", command, ...args] : args,
+        cwd: options.cwd,
+        env: Object.fromEntries(
+          Object.entries(options.env ?? {}).filter(
+            (entry): entry is [string, string] => entry[1] !== undefined,
+          ),
+        ),
+        stdin: inherit ? "inherit" : "null",
+        stdout: inherit ? "inherit" : "piped",
+        stderr: inherit ? "inherit" : "piped",
+      }).output();
+      return {
+        status: result.code,
+        stdout: inherit ? "" : decoder.decode(result.stdout),
+        stderr: inherit ? "" : decoder.decode(result.stderr),
+      };
+    } catch (error) {
+      return {
+        status: null,
+        stdout: "",
+        stderr: "",
+        error: error instanceof Error ? error : new Error(String(error)),
+      };
+    }
+  },
+  watchPaths(paths, onChange, onError) {
+    const watcher = Deno.watchFs(paths, { recursive: true });
+    let closed = false;
+    void (async () => {
+      try {
+        for await (const _event of watcher) if (!closed) onChange();
+      } catch (error) {
+        if (!closed)
+          onError(error instanceof Error ? error : new Error(String(error)));
+      }
+    })();
+    return () => {
+      closed = true;
+      watcher.close();
+    };
+  },
+  removeSync(value) {
+    try {
+      Deno.removeSync(value, { recursive: true });
+    } catch (error) {
+      if (!(error instanceof Deno.errors.NotFound)) throw error;
+    }
+  },
   writeFileSync: Deno.writeTextFileSync,
 };
 

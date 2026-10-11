@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "sourceCommit": "fixture",
+  "limits": {
+    "newProductionCountedLines": 300,
+    "newTestCountedLines": 500,
+    "newScriptCountedLines": 300
+  },
+  "files": {
+    "src/small.ts": {
+      "countedLines": 50,
+      "physicalLines": 50,
+      "forbiddenImportCount": 0
+    }
+  }
+}

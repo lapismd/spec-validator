@@ -1,5 +1,6 @@
 import { UsageError } from "../argv.js";
 import type { ResolvedConfig, Validator } from "../types.js";
+import * as fileLimits from "./file-limits.js";
 import * as book from "./book.js";
 import * as governance from "./governance.js";
 import * as markdownlint from "./markdownlint.js";
@@ -16,6 +17,7 @@ import * as verification from "./verification.js";
 
 const BUILTINS: Record<string, Validator> = {
   summary,
+  fileLimits,
   governance,
   verification,
   book,

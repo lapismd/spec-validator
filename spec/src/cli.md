@@ -16,8 +16,8 @@ The `spec-validator` binary is the supported entry point. Global output flags ap
 
 ### Acceptance details
 
-- `validate` MUST accept `--only` and `--skip` validator lists.
-- `first` MUST accept `--base`, `--head`, and `--file`.
+- `validate` MUST accept `--only` and `--skip` validator lists, and `first` MUST accept `--base`, `--head`, and `--file`.
+- `build` and `serve` MUST preserve authored sources; nested serving MUST rebuild edited content and newly added navigation, and staging MUST remove deleted source files.
 - `search` and `index` MUST stay outside `check`.
 - Unknown commands or flags MUST print usage and exit `2`.
 
@@ -42,3 +42,7 @@ The `spec-validator` binary is the supported entry point. Global output flags ap
 - The overall exit code MUST be the first non-zero lane status.
 - `search` and `index` MUST remain available as separate commands.
 - Pretty output MUST name each lane and result, while JSON output MUST contain ordered structured lane results with captured output.
+
+## Nested book generation
+
+The opt-in nested-summary mode expands bounded include directives for navigation fragments. Build stages sources and the expanded SUMMARY into ignored output before running mdBook; canonical source is never rewritten. Search and index accept `--scope` only when that scope is declared. Existing flat books and unscoped commands retain their behavior. Explicit JJ ranges and default merge checks use JJ rather than requiring a colocated Git checkout.

@@ -62,8 +62,24 @@ export function validate(context: ValidationContext) {
       }),
     );
   }
+  const staged =
+    context.config.validators.summary &&
+    context.config.validators.summary.fragments;
+  if (staged && !/^\/?spec\/\.generated\/?\s*$/m.test(ignore))
+    findings.push(
+      diagnostic({
+        code: "SPEC-BOOK-IGNORE",
+        rule: ignoreRule,
+        file: ".gitignore",
+        message: "add spec/.generated/ to .gitignore for staged navigation",
+      }),
+    );
   for (const tracked of context.trackedFiles) {
-    if (tracked === "spec/book" || tracked.startsWith("spec/book/")) {
+    if (
+      tracked === "spec/book" ||
+      tracked.startsWith("spec/book/") ||
+      (staged && tracked.startsWith("spec/.generated/"))
+    ) {
       findings.push(
         diagnostic({
           code: "SPEC-BOOK-TRACKED",

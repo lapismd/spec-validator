@@ -52,6 +52,7 @@ export async function runFirst(
     const result = classifySpecFirstChanges(
       changesFromVcs(selection, repoRoot),
       options,
+      options.confirmationProvider?.(repoRoot, selection) ?? [],
     );
     const findings = findingsFromResult(result, config.ruleIds.specFirst).map(
       (finding) => ({

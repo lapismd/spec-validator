@@ -1,3 +1,10 @@
+import { fallback, nativeOrFallbackMessage } from "./search-host.js";
+import { scopedSearchResults } from "./search-results.js";
+export {
+  looksLikeAbiMismatch,
+  looksLikeMissingNativeBinding,
+  nativeModuleAdvice,
+} from "./search-host.js";
 import { assertCommandArgs, UsageError } from "../argv.js";
 import { loadResolvedConfig } from "../config.js";
 import { existsSync, path, runtime, spawnSync } from "../platform/current.js";
@@ -15,69 +22,6 @@ export function resolveQmdBinary(
     ".bin",
     platform === "win32" ? "qmd.cmd" : "qmd",
   );
-}
-
-function fallback(query?: string): string {
-  const term = query ? query.replaceAll("'", "'\\''") : "<query>";
-  return `Fallback: rg -n -i --glob '*.md' '${term}' spec/src`;
-}
-
-function outputOf(result: {
-  stdout?: string | null;
-  stderr?: string | null;
-  error?: Error;
-}): string {
-  return [result.stdout, result.stderr, result.error?.message]
-    .filter(Boolean)
-    .join("\n");
-}
-
-export function looksLikeAbiMismatch(result: {
-  stdout?: string | null;
-  stderr?: string | null;
-  error?: Error;
-}): boolean {
-  return /NODE_MODULE_VERSION|different Node\.js version|ERR_DLOPEN_FAILED|Module did not self-register|compiled against.*Node/i.test(
-    outputOf(result),
-  );
-}
-
-export function looksLikeMissingNativeBinding(result: {
-  stdout?: string | null;
-  stderr?: string | null;
-  error?: Error;
-}): boolean {
-  return /Could not locate the bindings file|better_sqlite3\.node|Cannot find module ['"]better-sqlite3|node-llama-cpp/i.test(
-    outputOf(result),
-  );
-}
-
-export function nativeModuleAdvice(result: {
-  stdout?: string | null;
-  stderr?: string | null;
-  error?: Error;
-}): string | undefined {
-  if (looksLikeAbiMismatch(result)) {
-    const host = runtime.nodeAbi ? `Node ABI ${runtime.nodeAbi}` : "Deno 2.9.5";
-    return `QMD native modules do not match the active ${host}; run deno install --frozen=false with the required Deno version.`;
-  }
-  if (looksLikeMissingNativeBinding(result)) {
-    return "QMD native modules are not built; allow better-sqlite3 and node-llama-cpp scripts in deno.json, then run deno install --frozen=false.";
-  }
-  return undefined;
-}
-
-function nativeOrFallbackMessage(
-  result: {
-    stdout?: string | null;
-    stderr?: string | null;
-    error?: Error;
-  },
-  query?: string,
-): string {
-  const advice = nativeModuleAdvice(result);
-  const details = advice ?? outputOf(result).trim();
-  return [details, fallback(query)].filter(Boolean).join("\n");
 }
 
 function fail(reporter: Reporter, message: string, exitCode = 2): number {
@@ -100,16 +44,26 @@ export async function searchCommand(
     command === "search"
       ? {
           boolean: ["--semantic"],
-          value: ["--limit", "-n"],
+          value: ["--limit", "-n", "--scope"],
           positionals: true,
         }
-      : { boolean: ["--semantic"] },
+      : { boolean: ["--semantic"], value: ["--scope"] },
   );
   const config = await loadResolvedConfig(repoRoot);
   const options = config.validators.qmd;
   if (options === false) {
     return fail(reporter, "QMD is disabled in spec-validator config.");
   }
+  const scopeIndex = argv.indexOf("--scope");
+  const scope = scopeIndex >= 0 ? argv[scopeIndex + 1]! : options.defaultScope;
+  const selected = scope
+    ? options.scopes[scope]
+    : { collection: options.collection, path: config.specDir };
+  if (!selected)
+    throw new UsageError(
+      `unknown search scope ${scope}; choose ${Object.keys(options.scopes).join(", ")}`,
+    );
+  const sourceRoot = selected.path;
   const semantic = argv.includes("--semantic");
   const json = reporter.json;
   const limitIndex = argv.findIndex(
@@ -123,6 +77,7 @@ export async function searchCommand(
     .filter((item, index) => {
       if (item.startsWith("-")) return false;
       if (limitIndex >= 0 && index === limitIndex + 1) return false;
+      if (scopeIndex >= 0 && index === scopeIndex + 1) return false;
       return true;
     })
     .join(" ")
@@ -137,6 +92,7 @@ export async function searchCommand(
       reporter,
       `Missing ${options.configPath}; restore the tracked QMD configuration.\n${fallback(
         query,
+        sourceRoot,
       )}`,
     );
   }
@@ -146,6 +102,7 @@ export async function searchCommand(
       reporter,
       `Missing the repository-local QMD binary; run deno install --frozen=false.\n${fallback(
         query,
+        sourceRoot,
       )}`,
     );
   }
@@ -165,18 +122,20 @@ export async function searchCommand(
       `Specification index refresh failed.\n${nativeOrFallbackMessage(
         refresh,
         query,
+        sourceRoot,
       )}`,
       refresh.status ?? 1,
     );
   }
   if (semantic) {
-    const embed = run(["embed", "-c", options.collection]);
+    const embed = run(["embed", "-c", selected.collection]);
     if ((embed.status ?? 1) !== 0) {
       return fail(
         reporter,
         `Specification embedding or model initialization failed; retry or omit --semantic.\n${nativeOrFallbackMessage(
           embed,
           query,
+          sourceRoot,
         )}`,
         embed.status ?? 1,
       );
@@ -197,21 +156,44 @@ export async function searchCommand(
     semantic ? "vsearch" : "search",
     query,
     "-c",
-    options.collection,
+    selected.collection,
     "-n",
     String(Number.isFinite(limit) && limit > 0 ? limit : DEFAULT_LIMIT),
     "--format",
-    json ? "json" : "md",
+    json || scope ? "json" : "md",
     "--full-path",
     "--line-numbers",
   ]);
   if ((search.status ?? 1) !== 0) {
     return fail(
       reporter,
-      `Specification search failed.\n${nativeOrFallbackMessage(search, query)}`,
+      `Specification search failed.\n${nativeOrFallbackMessage(search, query, sourceRoot)}`,
       search.status ?? 1,
     );
   } else if (search.stdout) {
+    if (scope) {
+      try {
+        const results = scopedSearchResults(
+          repoRoot,
+          sourceRoot,
+          selected.collection,
+          JSON.parse(search.stdout),
+        );
+        if (json)
+          reporter.writeReport({ version: 1, ok: true, exitCode: 0, results });
+        else
+          for (const row of results)
+            reporter.writeLine(
+              `## ${row.title ?? "Source"}\n\n${row.file}:${row.line ?? 1}\n\n${row.snippet ?? ""}\n`,
+            );
+      } catch (error) {
+        return fail(
+          reporter,
+          `Invalid scoped QMD output: ${error instanceof Error ? error.message : error}`,
+        );
+      }
+      return 0;
+    }
     if (reporter.json) {
       let results: unknown = search.stdout.trim();
       try {

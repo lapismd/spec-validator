@@ -20,12 +20,13 @@ Specification changes precede or accompany protected implementation. Updating an
 | CLI entry, argv, reporter, and color                      | `cli.md`                 |
 | Config schema, loader, and neutral profiles               | `configuration.md`       |
 | Built-in validators and plugin loading                    | `validators.md`          |
-| Spec model and tracked-file discovery                     | `architecture.md`        |
+| Spec model, tracked-file discovery, and book lifecycle    | `architecture.md`        |
 | Doctor, init, and `--fix`                                 | `doctor-and-init.md`     |
 | QMD search and index wrappers                             | `search-and-qmd.md`      |
 | Skill payload and install command                         | `skill-and-agents.md`    |
 | Specification chapters, book, QMD config, and agent guide | `spec-governance.md`     |
 | Package manifests and build scripts                       | `architecture.md`        |
+| Counted-line architecture checker and baseline            | `architecture.md`        |
 | Deno workspace and cross-repository tooling               | `workspace-tools.md`     |
 
 ## SV-GOV-002 — Verification matrix
@@ -57,7 +58,7 @@ Specification changes precede or accompany protected implementation. Updating an
 ### Acceptance details
 
 - Local runs MUST inspect the current Jujutsu change, or Git when Jujutsu is absent.
-- CI MAY pass `--base` and `--head` for an explicit revision range.
+- CI MAY select explicit ranges; JJ repositories MUST use JJ and audit all parents, while opt-in topic patterns and validated fresh unchanged-contract confirmations MUST cover every mapped owner.
 - Tests, generated output, and ordinary fixtures MUST NOT satisfy or spuriously trigger the gate.
 - Unmapped protected paths MUST fail rather than pass silently.
 
@@ -67,7 +68,7 @@ Specification changes precede or accompany protected implementation. Updating an
 
 ### Acceptance details
 
-- `.gitignore` MUST contain `spec/book/`, `.deno/`, and `.qmd/index.sqlite*` when QMD is enabled.
+- `.gitignore` MUST contain `spec/book/`, `.deno/`, and `.qmd/index.sqlite*` when QMD is enabled, and staged navigation MUST ignore `spec/.generated/`.
 - Tracked files under `spec/book/` MUST fail the book validator.
 - Doctor `--fix` MAY append missing ignore lines and MUST NOT invent requirement IDs.
 
