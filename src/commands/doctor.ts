@@ -16,7 +16,7 @@ import {
 } from "../platform/current.js";
 import type { Reporter } from "../reporter.js";
 import type { DoctorCheck, ResolvedConfig } from "../types.js";
-import { resolveQmdBinary } from "./search.js";
+import { qmdBinaryCheck, qmdNativeCheck } from "./doctor-qmd.js";
 import { globalSkillPath, installSkill } from "./skill.js";
 
 function which(command: string): boolean {
@@ -126,31 +126,8 @@ async function inspect(
         : "QMD config is missing or does not match the configured collection",
       fixable: true,
     });
-    const binary = resolveQmdBinary(repoRoot);
-    checks.push({
-      name: "qmd-binary",
-      status: existsSync(binary) ? "pass" : "warn",
-      message: existsSync(binary)
-        ? "local qmd binary present"
-        : "optional qmd binary missing; search will fall back to rg",
-    });
-    const denoPath = path.join(repoRoot, "deno.json");
-    const denoConfig = existsSync(denoPath) ? readJson(denoPath) : {};
-    const allowScripts = Array.isArray(denoConfig.allowScripts)
-      ? denoConfig.allowScripts.filter(
-          (entry): entry is string => typeof entry === "string",
-        )
-      : [];
-    const nativeAllowed = ["better-sqlite3", "node-llama-cpp"].every((name) =>
-      allowScripts.some((entry) => entry === name || entry === `npm:${name}`),
-    );
-    checks.push({
-      name: "deno-native-builds",
-      status: nativeAllowed ? "pass" : "fail",
-      message: nativeAllowed
-        ? "QMD native builds are allowed in deno.json"
-        : "allow better-sqlite3 and node-llama-cpp scripts in deno.json",
-    });
+    checks.push(qmdBinaryCheck());
+    checks.push(qmdNativeCheck(repoRoot));
   }
 
   checks.push({

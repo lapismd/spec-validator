@@ -74,7 +74,7 @@ export default defineConfig(headingRequirements(), {
           chapters: ["spec/src/architecture.md"],
         },
         {
-          pattern: "^src/commands/(?:doctor|init)\\.ts$",
+          pattern: "^src/commands/(?:doctor(?:-qmd)?|init)\\.ts$",
           chapters: ["spec/src/doctor-and-init.md"],
         },
         {

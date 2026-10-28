@@ -127,6 +127,11 @@ The package claims no import-direction layer matrix. The surfaces in each
 coverage table are public boundaries, not layers, so the architecture checker
 enforces size, naming, and production isolation from tests only.
 
+The versioned JSON report envelope carries optional `degraded` and `warning`
+fields so a search that fell back to `rg` stays machine-readable; the fallback
+contract itself is normative in
+[Search and QMD](./search-and-qmd.md) as SV-QMD-002.
+
 `deno task check:architecture` runs the gate and `deno task check` and
 `deno task test:all` own it. Both lanes stay Deno-owned: the checker is
 first-party Deno automation under SV-ARCH-005 and is audited by

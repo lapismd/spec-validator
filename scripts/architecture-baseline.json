@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "sourceCommit": "4e85c8b451dea28a8c7c49778c8c8a0b3b246035",
+  "sourceCommit": "90aed9369fa07e5925a13e0d438d18ff7bf634c1",
   "limits": {
     "newProductionCountedLines": 300,
     "newTestCountedLines": 500,
@@ -142,9 +142,19 @@
       "physicalLines": 85,
       "forbiddenImportCount": 0
     },
+    "src/commands/doctor-qmd.spec.ts": {
+      "countedLines": 93,
+      "physicalLines": 102,
+      "forbiddenImportCount": 0
+    },
+    "src/commands/doctor-qmd.ts": {
+      "countedLines": 59,
+      "physicalLines": 67,
+      "forbiddenImportCount": 0
+    },
     "src/commands/doctor.ts": {
-      "countedLines": 326,
-      "physicalLines": 334,
+      "countedLines": 303,
+      "physicalLines": 311,
       "forbiddenImportCount": 0
     },
     "src/commands/first.ts": {
@@ -163,8 +173,8 @@
       "forbiddenImportCount": 0
     },
     "src/commands/search-host.ts": {
-      "countedLines": 59,
-      "physicalLines": 64,
+      "countedLines": 143,
+      "physicalLines": 161,
       "forbiddenImportCount": 0
     },
     "src/commands/search-results.spec.ts": {
@@ -178,18 +188,18 @@
       "forbiddenImportCount": 0
     },
     "src/commands/search-scopes.spec.ts": {
-      "countedLines": 73,
-      "physicalLines": 73,
+      "countedLines": 77,
+      "physicalLines": 77,
       "forbiddenImportCount": 0
     },
     "src/commands/search.spec.ts": {
-      "countedLines": 49,
-      "physicalLines": 54,
+      "countedLines": 239,
+      "physicalLines": 256,
       "forbiddenImportCount": 0
     },
     "src/commands/search.ts": {
-      "countedLines": 204,
-      "physicalLines": 212,
+      "countedLines": 213,
+      "physicalLines": 221,
       "forbiddenImportCount": 0
     },
     "src/commands/skill.spec.ts": {
@@ -328,8 +338,8 @@
       "forbiddenImportCount": 0
     },
     "src/types.ts": {
-      "countedLines": 368,
-      "physicalLines": 392,
+      "countedLines": 370,
+      "physicalLines": 394,
       "forbiddenImportCount": 0
     },
     "src/validators/book.ts": {

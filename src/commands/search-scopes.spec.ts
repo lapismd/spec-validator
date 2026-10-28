@@ -14,9 +14,11 @@ import { searchCommand } from "./search.js";
 import { createReporter } from "../reporter.js";
 test("current scope defaults and semantic history embeds only the selected collection", async () => {
   const root = mkdtempSync(join(tmpdir(), "spec-scopes-"));
+  const previousPath = process.env.PATH;
   try {
     mkdirSync(join(root, ".qmd"));
-    mkdirSync(join(root, "node_modules/.bin"), { recursive: true });
+    const binDir = join(root, "bin");
+    mkdirSync(binDir, { recursive: true });
     writeFileSync(
       join(root, "spec-validator.config.json"),
       JSON.stringify({
@@ -33,12 +35,13 @@ test("current scope defaults and semantic history embeds only the selected colle
       }),
     );
     writeFileSync(join(root, ".qmd/index.yml"), "collections: {}\n");
-    const binary = join(root, "node_modules/.bin/qmd");
+    const binary = join(binDir, "qmd");
     writeFileSync(
       binary,
       `#!/bin/sh\nprintf '%s\\n' "$*" >> '${root}/calls'\n`,
     );
     chmodSync(binary, 0o755);
+    process.env.PATH = `${binDir}:${previousPath ?? ""}`;
     const reporter = createReporter({ color: "never", json: false });
     assert.equal(
       await searchCommand(root, ["publication"], reporter, "search"),
@@ -68,6 +71,7 @@ test("current scope defaults and semantic history embeds only the selected colle
       /unknown search scope/,
     );
   } finally {
+    process.env.PATH = previousPath;
     rmSync(root, { recursive: true, force: true });
   }
 });

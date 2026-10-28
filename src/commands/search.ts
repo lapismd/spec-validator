@@ -1,8 +1,16 @@
-import { fallback, nativeOrFallbackMessage } from "./search-host.js";
+import {
+  degradeToRg,
+  fallback,
+  findQmdOnPath,
+  qmdFailureDetail,
+  QMD_INSTALL_COMMAND,
+} from "./search-host.js";
 import { scopedSearchResults } from "./search-results.js";
 export {
+  findQmdOnPath,
   looksLikeAbiMismatch,
   looksLikeMissingNativeBinding,
+  looksLikeModelUnavailable,
   nativeModuleAdvice,
 } from "./search-host.js";
 import { assertCommandArgs, UsageError } from "../argv.js";
@@ -11,18 +19,6 @@ import { existsSync, path, runtime, spawnSync } from "../platform/current.js";
 import type { Reporter } from "../reporter.js";
 
 const DEFAULT_LIMIT = 10;
-
-export function resolveQmdBinary(
-  repoRoot: string,
-  platform = runtime.platform,
-): string {
-  return path.join(
-    repoRoot,
-    "node_modules",
-    ".bin",
-    platform === "win32" ? "qmd.cmd" : "qmd",
-  );
-}
 
 function fail(reporter: Reporter, message: string, exitCode = 2): number {
   if (reporter.json) {
@@ -50,22 +46,9 @@ export async function searchCommand(
       : { boolean: ["--semantic"], value: ["--scope"] },
   );
   const config = await loadResolvedConfig(repoRoot);
-  const options = config.validators.qmd;
-  if (options === false) {
-    return fail(reporter, "QMD is disabled in spec-validator config.");
-  }
-  const scopeIndex = argv.indexOf("--scope");
-  const scope = scopeIndex >= 0 ? argv[scopeIndex + 1]! : options.defaultScope;
-  const selected = scope
-    ? options.scopes[scope]
-    : { collection: options.collection, path: config.specDir };
-  if (!selected)
-    throw new UsageError(
-      `unknown search scope ${scope}; choose ${Object.keys(options.scopes).join(", ")}`,
-    );
-  const sourceRoot = selected.path;
   const semantic = argv.includes("--semantic");
   const json = reporter.json;
+  const scopeIndex = argv.indexOf("--scope");
   const limitIndex = argv.findIndex(
     (item) => item === "--limit" || item === "-n",
   );
@@ -86,25 +69,36 @@ export async function searchCommand(
     throw new UsageError("search requires a query");
   }
 
+  const options = config.validators.qmd;
+  if (options === false) {
+    const detail = "QMD is disabled in spec-validator config.";
+    return command === "search"
+      ? degradeToRg(reporter, repoRoot, detail, query, config.specDir)
+      : fail(reporter, detail);
+  }
+  const scope = scopeIndex >= 0 ? argv[scopeIndex + 1]! : options.defaultScope;
+  const selected = scope
+    ? options.scopes[scope]
+    : { collection: options.collection, path: config.specDir };
+  if (!selected)
+    throw new UsageError(
+      `unknown search scope ${scope}; choose ${Object.keys(options.scopes).join(", ")}`,
+    );
+  const sourceRoot = selected.path;
+
   const configPath = path.join(repoRoot, options.configPath);
   if (!existsSync(configPath)) {
-    return fail(
-      reporter,
-      `Missing ${options.configPath}; restore the tracked QMD configuration.\n${fallback(
-        query,
-        sourceRoot,
-      )}`,
-    );
+    const detail = `Missing ${options.configPath}; restore the tracked QMD configuration.`;
+    return command === "search"
+      ? degradeToRg(reporter, repoRoot, detail, query, sourceRoot)
+      : fail(reporter, `${detail}\n${fallback(query, sourceRoot)}`);
   }
-  const binary = resolveQmdBinary(repoRoot);
-  if (!existsSync(binary)) {
-    return fail(
-      reporter,
-      `Missing the repository-local QMD binary; run deno install --frozen=false.\n${fallback(
-        query,
-        sourceRoot,
-      )}`,
-    );
+  const binary = findQmdOnPath();
+  if (!binary) {
+    const detail = `Missing the system qmd binary on PATH; install it with \`${QMD_INSTALL_COMMAND}\`.`;
+    return command === "search"
+      ? degradeToRg(reporter, repoRoot, detail, query, sourceRoot)
+      : fail(reporter, `${detail}\n${fallback(query, sourceRoot)}`);
   }
 
   const run = (args: string[]) =>
@@ -117,28 +111,38 @@ export async function searchCommand(
 
   const refresh = run(["update"]);
   if ((refresh.status ?? 1) !== 0) {
-    return fail(
-      reporter,
-      `Specification index refresh failed.\n${nativeOrFallbackMessage(
-        refresh,
-        query,
-        sourceRoot,
-      )}`,
-      refresh.status ?? 1,
-    );
+    const detail = qmdFailureDetail(refresh);
+    return command === "search"
+      ? degradeToRg(
+          reporter,
+          repoRoot,
+          `Specification index refresh failed. ${detail}`,
+          query,
+          sourceRoot,
+        )
+      : fail(
+          reporter,
+          `Specification index refresh failed.\n${detail}\n${fallback(query, sourceRoot)}`,
+          refresh.status ?? 1,
+        );
   }
   if (semantic) {
     const embed = run(["embed", "-c", selected.collection]);
     if ((embed.status ?? 1) !== 0) {
-      return fail(
-        reporter,
-        `Specification embedding or model initialization failed; retry or omit --semantic.\n${nativeOrFallbackMessage(
-          embed,
-          query,
-          sourceRoot,
-        )}`,
-        embed.status ?? 1,
-      );
+      const detail = qmdFailureDetail(embed);
+      return command === "search"
+        ? degradeToRg(
+            reporter,
+            repoRoot,
+            `Specification embedding or model initialization failed. ${detail}`,
+            query,
+            sourceRoot,
+          )
+        : fail(
+            reporter,
+            `Specification embedding or model initialization failed; retry or omit --semantic.\n${detail}\n${fallback(query, sourceRoot)}`,
+            embed.status ?? 1,
+          );
     }
   }
   if (command === "index") {
@@ -165,10 +169,12 @@ export async function searchCommand(
     "--line-numbers",
   ]);
   if ((search.status ?? 1) !== 0) {
-    return fail(
+    return degradeToRg(
       reporter,
-      `Specification search failed.\n${nativeOrFallbackMessage(search, query, sourceRoot)}`,
-      search.status ?? 1,
+      repoRoot,
+      `Specification search failed. ${qmdFailureDetail(search)}`,
+      query,
+      sourceRoot,
     );
   } else if (search.stdout) {
     if (scope) {
@@ -187,9 +193,12 @@ export async function searchCommand(
               `## ${row.title ?? "Source"}\n\n${row.file}:${row.line ?? 1}\n\n${row.snippet ?? ""}\n`,
             );
       } catch (error) {
-        return fail(
+        return degradeToRg(
           reporter,
+          repoRoot,
           `Invalid scoped QMD output: ${error instanceof Error ? error.message : error}`,
+          query,
+          sourceRoot,
         );
       }
       return 0;

@@ -23,14 +23,14 @@
 
 ## SV-DOC-002 — Doctor report
 
-**Requirement.** `doctor` MUST report config, spec files, book, ignore rules, Deno version and task wiring, optional QMD, mdBook, and npm script wiring as discrete checks with pass, warn, or fail status.
+**Requirement.** `doctor` MUST report config, spec files, book, ignore rules, Deno version and task wiring, optional QMD tooling and native-module health, mdBook, and npm script wiring as discrete checks with pass, warn, or fail status.
 
 ### Acceptance details
 
 - Pretty output MUST group checks and print a short summary.
 - `--json` MUST include every check name, status, and message.
 - `--strict` MUST treat remaining warnings as failure.
-- Missing optional QMD tooling MUST warn when QMD is enabled and MUST NOT fail `validate`.
+- When QMD is enabled, missing tooling MUST warn without failing `validate`, and a system-binary probe MUST fail an ABI mismatch or missing native binding with the exact `npm` repair command.
 
 ## SV-DOC-003 — Doctor fix safety
 
