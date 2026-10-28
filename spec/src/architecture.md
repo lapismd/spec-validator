@@ -1,6 +1,6 @@
 # Architecture
 
-The repository is Deno-first while publishing a Node-compatible CLI and TypeScript library. Deno owns dependency installation, repository tasks, tests, and first-party automation; npm metadata and built `dist` output remain the portable consumer contract.
+The repository is a pure Node package: pnpm owns dependency installation and repository tasks, TypeScript compiles `src` to the published `dist` output, and Node 22 or newer is the only runtime requirement for contributors and consumers.
 
 ## Public surface coverage
 
@@ -9,8 +9,8 @@ The repository is Deno-first while publishing a Node-compatible CLI and TypeScri
 | CLI and registry       | Architecture    | SV-ARCH-001 |
 | Tracked-file discovery | Architecture    | SV-ARCH-002 |
 | Plugin contract        | Architecture    | SV-ARCH-003 |
-| QMD native builds      | Architecture    | SV-ARCH-004 |
-| Deno workspace         | Architecture    | SV-ARCH-005 |
+| QMD system install     | Architecture    | SV-ARCH-004 |
+| Node workspace         | Architecture    | SV-ARCH-005 |
 | Public package         | Architecture    | SV-ARCH-006 |
 | Trusted publication    | Architecture    | SV-ARCH-007 |
 | Counted-line budgets   | Architecture    | SV-ARCH-008 |
@@ -22,7 +22,7 @@ The repository is Deno-first while publishing a Node-compatible CLI and TypeScri
 
 ### Acceptance details
 
-- The published npm bin MUST resolve to `dist/cli.js` and start with a Node shebang, while the repository CLI MUST also run directly under Deno.
+- The published npm bin MUST resolve to `dist/cli.js` and start with a Node shebang, and the repository CLI MUST run the same built artifact.
 - `defineConfig` MUST compose typed configuration fragments, including definition and reference matchers, exact repository-layout entries, verification multiplicity, mirror link styles, and table acceptance-detail policy; neutral profiles MUST provide reusable defaults without embedding repository policy.
 - Disabled validators MUST NOT run during `validate` or `check`; live book serving MUST use the installed runtime adapter for asynchronous commands and source watching.
 - The registry MUST accept extra plugin modules that export `name` and `validate`, and package builds MUST remove stale node output before compilation.
@@ -49,27 +49,26 @@ The repository is Deno-first while publishing a Node-compatible CLI and TypeScri
 - Plugins listed in config MUST load from paths relative to the consumer root.
 - A plugin load or validate throw MUST become an internal failure with exit code `2`.
 
-## SV-ARCH-004 — QMD native builds
+## SV-ARCH-004 — QMD system install
 
-**Requirement.** Root Deno configuration MUST approve only the reviewed QMD native lifecycle scripts, and `@tobilu/qmd` MUST remain a root-only optional peer rather than a published runtime dependency.
-
-### Acceptance details
-
-- Deno `allowScripts` MUST allow `better-sqlite3`, `node-llama-cpp`, and local test tooling that requires lifecycle scripts.
-- `@tobilu/qmd` MUST stay an optional peer and root development dependency.
-- Those native approvals MUST NOT enter a published runtime dependency list.
-- `esbuild` MAY be approved for local test tooling.
-
-## SV-ARCH-005 — Deno workspace
-
-**Requirement.** Deno 2.9.5 MUST be the canonical repository runtime, installer, task runner, and lockfile owner while npm artifacts remain compatible with supported Node consumers.
+**Requirement.** QMD MUST remain an operator-owned system tool resolved from PATH, and the package MUST NOT declare `@tobilu/qmd` or its native modules as dependencies.
 
 ### Acceptance details
 
-- The root MUST contain one `deno.json` and one `deno.lock`, use manually installed isolated `node_modules`, reject any other Deno version through a canonical version-check task, expose its built portable Deno entry point by package name, and validate the built npm surface with `publint`.
-- `deno ci` MUST reproduce dependencies from the frozen lock before validation.
-- Cross-repository orchestration MUST use the versioned workspace schema, explicit dependency directions, build freshness checks, and content-addressed invalidation for declared deterministic tasks; active repository tasks and guidance MUST invoke Deno rather than pnpm or Turbo, while package lifecycle scripts MAY delegate to canonical Deno tasks.
-- First-party Deno automation MUST use Deno or Web APIs; Node APIs MUST stay in explicit npm compatibility adapters and tests.
+- Search and doctor MUST invoke the PATH `qmd` binary per SV-QMD-002 and MUST NOT rely on a repository-local or bundled QMD runtime.
+- `@tobilu/qmd` MUST NOT appear in the published dependency or peer-dependency lists.
+- Dependency installation MUST resolve through the tracked pnpm lockfile, and any dependency requiring lifecycle scripts MUST be approved explicitly rather than silently.
+
+## SV-ARCH-005 — Node workspace
+
+**Requirement.** Node 22 or newer MUST be the canonical repository runtime, with pnpm owning installation and package scripts owning tasks, tests, and first-party automation.
+
+### Acceptance details
+
+- The root MUST contain one `package.json` and one `pnpm-lock.yaml`, MUST NOT contain `deno.json`, `deno.lock`, or Deno entry points, and MUST validate the built npm surface with `publint`.
+- `pnpm install --frozen-lockfile` MUST reproduce every development dependency before validation in CI.
+- Cross-repository orchestration MUST use the versioned workspace schema, explicit dependency directions, build freshness checks, and content-addressed invalidation for declared deterministic tasks; active repository tasks and guidance MUST invoke pnpm package scripts rather than Deno or Turbo.
+- A runtime-boundary audit MUST fail on residual Deno globals, `jsr:` imports, or retired Deno runtime files in first-party source, scripts, tests, and workspace tooling.
 
 ## SV-ARCH-006 — Public package
 
@@ -80,7 +79,7 @@ The repository is Deno-first while publishing a Node-compatible CLI and TypeScri
 - The manifest MUST declare public npm access and identify `https://github.com/lapismd/spec-validator` as the canonical public repository, homepage, and issue tracker root.
 - The package allowlist MUST contain only built runtime and type output, the optional usage skill, README, changelog, license, and package metadata.
 - Runtime and optional peer dependencies MUST use portable semver ranges without local protocols or machine paths.
-- The packed binary, Node and Deno exports, documentation files, and license MUST resolve without consulting the source checkout.
+- The packed binary, Node exports, documentation files, and license MUST resolve without consulting the source checkout.
 
 ## SV-ARCH-007 — Trusted npm publication
 
@@ -89,13 +88,13 @@ The repository is Deno-first while publishing a Node-compatible CLI and TypeScri
 ### Acceptance details
 
 - The publication workflow MUST run only for `v*` tags and reject a tag whose version does not exactly match `package.json`.
-- The package gate MUST install from the frozen Deno lockfile, run the canonical checks and tests, and upload exactly one npm tarball.
+- The package gate MUST install from the frozen pnpm lockfile, run the canonical checks and tests, and upload exactly one npm tarball.
 - The publication job MUST download that verified tarball and use the protected `npm-production` environment with GitHub OIDC publish-only permission rather than an npm token.
 - A successful or retry-safe already-published release MUST verify the installed version, registry signatures, and Sigstore provenance, then create or retain a non-draft, non-prerelease GitHub Release for the exact existing tag.
 
 ## SV-ARCH-008 — Counted-line budgets
 
-**Requirement.** First-party source MUST stay inside counted-line budgets enforced by a Deno architecture checker that fails closed when its baseline is missing.
+**Requirement.** First-party source MUST stay inside counted-line budgets enforced by a first-party Node architecture checker that fails closed when its baseline is missing.
 
 ### Acceptance details
 
@@ -132,10 +131,10 @@ fields so a search that fell back to `rg` stays machine-readable; the fallback
 contract itself is normative in
 [Search and QMD](./search-and-qmd.md) as SV-QMD-002.
 
-`deno task check:architecture` runs the gate and `deno task check` and
-`deno task test:all` own it. Both lanes stay Deno-owned: the checker is
-first-party Deno automation under SV-ARCH-005 and is audited by
-`scripts/check-runtime-boundaries.ts`.
+`pnpm check:architecture` runs the gate and `pnpm check` and
+`pnpm test:all` own it. The checker is first-party Node automation under
+SV-ARCH-005 and stays covered by the `pnpm audit:runtime` boundary audit
+in `scripts/check-runtime-boundaries.ts`.
 
 The bounded-document delivery extracts validator defaults, document-role classification and JJ diff parsing into owned modules before recording the updated counted-line baseline. New modules remain inside the 300-line budget.
 

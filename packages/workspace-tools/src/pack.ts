@@ -1,7 +1,8 @@
-import { dirname, isAbsolute, resolve } from "jsr:@std/path@1.1.6";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, isAbsolute, resolve } from "node:path";
 
-import { loadWorkspaceDeclaration } from "./config.ts";
-import type { PackageManifest } from "./types.ts";
+import { loadWorkspaceDeclaration } from "./config.js";
+import type { PackageManifest } from "./types.js";
 
 const DEPENDENCY_SECTIONS = [
   "dependencies",
@@ -52,8 +53,8 @@ export function writePortableManifest(
   if (source === output) {
     throw new Error("pack output must not overwrite the source manifest");
   }
-  const manifest = JSON.parse(Deno.readTextFileSync(source)) as PackageManifest;
+  const manifest = JSON.parse(readFileSync(source, "utf8")) as PackageManifest;
   const portable = createPortableManifest(repoRoot, manifest);
-  Deno.mkdirSync(dirname(output), { recursive: true });
-  Deno.writeTextFileSync(output, `${JSON.stringify(portable, null, 2)}\n`);
+  mkdirSync(dirname(output), { recursive: true });
+  writeFileSync(output, `${JSON.stringify(portable, null, 2)}\n`);
 }

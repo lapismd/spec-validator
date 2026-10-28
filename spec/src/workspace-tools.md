@@ -1,17 +1,14 @@
 # Workspace tools
 
-`@lapismd/workspace-tools` provides Deno-first source linking and task
-orchestration for separately versioned sibling repositories. It does not turn
-the sibling checkouts into one workspace or replace their own locks.
+`@lapismd/workspace-tools` provides source linking and task orchestration for
+separately versioned sibling repositories. It does not turn the sibling
+checkouts into one workspace or replace their own locks.
 The package manifest exposes both its library surface and `./cli` so sibling
 declarations can validate the bootstrap entry point before synchronization.
-Deno resolves dependency-direction siblings through the tracked root
-`deno.json.links` list. The synchronizer complements that native resolution by
-materializing the package and binary links required by npm-compatible Node,
-Vite, Storybook, and publishing tools.
-Deno requires unscoped filesystem permission when creating symlinks, so the
-tool itself MUST enforce the declared workspace and `node_modules` boundaries
-before using that permission.
+The synchronizer materializes the package and binary links required by Node,
+Vite, Storybook, and publishing tools beneath each consumer's `node_modules`.
+Creating symlinks can replace operator-owned files, so the tool itself MUST
+enforce the declared workspace and `node_modules` boundaries before writing.
 The root Prettier configuration formats the workspace implementation, fixtures,
 and schema so release checks apply one source-format contract throughout the
 repository.
@@ -31,10 +28,10 @@ repository.
 
 ### Acceptance details
 
-- Each repository MUST declare cacheable tasks only when their input and output paths are deterministic; each link MUST declare a package name, relative target, full recorded commit ID for CI checkout, portable range, dependency direction, required exports, and a build contract with task, inputs, and outputs, while every dependency-direction target MUST also appear in the tracked root `deno.json.links` list.
+- Each repository MUST declare cacheable tasks only when their input and output paths are deterministic; each link MUST declare a package name, relative target, full recorded commit ID for CI checkout, portable range, dependency direction, required exports, and a build contract with task, inputs, and outputs.
 - The tracked JSON Schema and valid/invalid fixtures MUST describe the same fail-closed declaration contract as the runtime parser, including rejection of unknown fields, duplicate packages, invalid ranges, and malformed paths.
 - Relative targets MUST resolve inside the declared shared workspace root.
-- The package name, version, and required exports read from both the target npm manifest and its JSR-style `deno.json` package configuration MUST satisfy the declaration before any task or mutation runs.
+- The package name, version, and required exports read from the target npm manifest MUST satisfy the declaration before any task or mutation runs.
 
 ## SV-WORK-002 — Link validation and synchronization
 
@@ -42,14 +39,14 @@ repository.
 
 ### Acceptance details
 
-- `check` MUST be read-only and reject missing or undeclared native Deno links, while `sync` MUST leave tracked `deno.json.links` unchanged and record only npm-compatibility entries beneath `node_modules`.
+- `check` MUST be read-only and reject missing or invalid declarations, while `sync` MUST record only owned entries beneath `node_modules`.
 - Synchronization MUST refuse missing exports, missing or stale build output, path escapes including symbolic-link escapes, target-name mismatches, and existing non-owned files or directories.
 - Stale owned symlinks MAY be removed only when they still point at the recorded target.
 - Repeated synchronization MUST be deterministic and idempotent.
 
 ## SV-WORK-003 — Cross-repository tasks
 
-**Requirement.** `lapismd-workspace run <task>` MUST execute selected repositories in dependency order using each repository's canonical Deno task.
+**Requirement.** `lapismd-workspace run <task>` MUST execute selected repositories in dependency order using each repository's canonical package script.
 
 ### Acceptance details
 

@@ -28,16 +28,15 @@ jobs:
       - name: Check out the release tag
         uses: actions/checkout@v7
 
-      - name: Set up Deno
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.9.5
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
 
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
+          cache: pnpm
 
       - name: Install pinned mdBook
         uses: peaceiris/actions-mdbook@v2
@@ -45,7 +44,7 @@ jobs:
           mdbook-version: "0.5.2"
 
       - name: Install dependencies from the frozen lockfile
-        run: deno task ci
+        run: pnpm install --frozen-lockfile
 
       - name: Validate exact release metadata
         id: release
@@ -69,8 +68,8 @@ jobs:
 
       - name: Run canonical checks
         run: |
-          deno task check
-          deno task test:all
+          pnpm run check
+          pnpm run test:all
 
       - name: Pack the exact npm artifact
         run: |

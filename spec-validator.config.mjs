@@ -48,7 +48,7 @@ export default defineConfig(headingRequirements(), {
         },
         {
           pattern:
-            "^src/(?:index(?:-core|\\.deno)?|deno-contract|test-setup)\\.ts$|^src/platform/",
+            "^src/(?:index(?:-core|\\.deno)?|deno-contract|tooling-contract|test-setup)\\.ts$|^src/platform/",
           chapters: ["spec/src/architecture.md"],
         },
         {
@@ -97,7 +97,7 @@ export default defineConfig(headingRequirements(), {
           chapters: ["spec/src/spec-governance.md"],
         },
         {
-          pattern: "^(?:package\\.json|deno\\.(?:json|lock))$",
+          pattern: "^(?:package\\.json|pnpm-lock\\.yaml)$",
           chapters: ["spec/src/architecture.md"],
         },
         {
@@ -113,7 +113,7 @@ export default defineConfig(headingRequirements(), {
         "^scripts/",
         "^packages/workspace-tools/",
         "^spec/book\\.toml$",
-        "^(?:package\\.json|deno\\.(?:json|lock)|lapismd-workspace\\.json)$",
+        "^(?:package\\.json|pnpm-lock\\.yaml|lapismd-workspace\\.json)$",
         "^AGENTS\\.md$",
       ],
     },
@@ -122,10 +122,10 @@ export default defineConfig(headingRequirements(), {
     lanes: [
       {
         name: "architecture",
-        command: "deno",
-        args: ["task", "check:architecture"],
+        command: "pnpm",
+        args: ["run", "check:architecture"],
       },
-      { name: "tests", command: "deno", args: ["task", "test:all"] },
+      { name: "tests", command: "pnpm", args: ["run", "test:all"] },
     ],
     build: true,
     first: true,

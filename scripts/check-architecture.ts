@@ -2,12 +2,23 @@
  * SV-ARCH-008 and SV-ARCH-009 architecture checker: counted-line budgets,
  * generic dump filenames, and production isolation from tests.
  *
- * Run through `deno task check:architecture`. This is first-party Deno
- * automation, so it MUST use Deno and Web APIs only (SV-ARCH-005) and is
- * audited by `scripts/check-runtime-boundaries.ts`.
+ * Run through `pnpm check:architecture`. This is first-party Node automation
+ * under SV-ARCH-005 and is audited by `scripts/check-runtime-boundaries.ts`.
  */
 
-import { countedLines, physicalLines } from "./architecture-lines.ts";
+import { spawnSync } from "node:child_process";
+import {
+  type Dirent,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  writeFileSync,
+} from "node:fs";
+import process from "node:process";
+import { resolve as resolvePath } from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { countedLines, physicalLines } from "./architecture-lines.js";
 import {
   DEFAULT_LIMITS,
   DUMP_NAMES,
@@ -18,11 +29,10 @@ import {
   toPosix,
   type FileKind,
   LIMIT_KEYS,
-} from "./architecture-policy.ts";
+} from "./architecture-policy.js";
 
 const SKIP_DIRS = new Set([
   ".cache",
-  ".deno",
   ".git",
   ".jj",
   ".qmd",
@@ -88,15 +98,15 @@ export function parseArgs(argv: string[]): ArchitectureOptions {
 function walkSources(root: string): string[] {
   const files: string[] = [];
   const visit = (directory: string): void => {
-    let entries: Deno.DirEntry[];
+    let entries: Dirent[];
     try {
-      entries = [...Deno.readDirSync(directory)];
+      entries = readdirSync(directory, { withFileTypes: true });
     } catch {
       return;
     }
     for (const entry of entries) {
       const full = `${directory}/${entry.name}`;
-      if (entry.isDirectory) {
+      if (entry.isDirectory()) {
         if (SKIP_DIRS.has(entry.name)) continue;
         const relative = toPosix(full.slice(root.length + 1));
         if (
@@ -108,7 +118,7 @@ function walkSources(root: string): string[] {
         visit(full);
         continue;
       }
-      if (entry.isFile && isSourceFile(entry.name)) files.push(full);
+      if (entry.isFile() && isSourceFile(entry.name)) files.push(full);
     }
   };
   for (const sourceRoot of SOURCE_ROOTS) visit(`${root}/${sourceRoot}`);
@@ -117,7 +127,7 @@ function walkSources(root: string): string[] {
 
 function readBaseline(baselinePath: string): Baseline | null {
   try {
-    return JSON.parse(Deno.readTextFileSync(baselinePath)) as Baseline;
+    return JSON.parse(readFileSync(baselinePath, "utf8")) as Baseline;
   } catch {
     return null;
   }
@@ -125,8 +135,9 @@ function readBaseline(baselinePath: string): Baseline | null {
 
 function sourceCommit(root: string): string {
   try {
-    const result = new Deno.Command("jj", {
-      args: [
+    const result = spawnSync(
+      "jj",
+      [
         "--no-pager",
         "log",
         "-r",
@@ -137,12 +148,10 @@ function sourceCommit(root: string): string {
         "-T",
         "commit_id",
       ],
-      cwd: root,
-      stdout: "piped",
-      stderr: "null",
-    }).outputSync();
-    if (!result.success) return "unknown";
-    return new TextDecoder().decode(result.stdout).trim() || "unknown";
+      { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+    );
+    if (result.status !== 0) return "unknown";
+    return (result.stdout ?? "").trim() || "unknown";
   } catch {
     return "unknown";
   }
@@ -160,7 +169,7 @@ function productionTestImports(source: string): string[] {
 export function checkArchitecture(
   options: ArchitectureOptions = {},
 ): ArchitectureReport {
-  const repoRoot = (options.root ?? Deno.cwd()).replace(/\/+$/u, "");
+  const repoRoot = (options.root ?? process.cwd()).replace(/\/+$/u, "");
   const baselineFile =
     options.baselinePath ?? `${repoRoot}/scripts/architecture-baseline.json`;
   const writeBaseline = options.writeBaseline === true;
@@ -172,9 +181,8 @@ export function checkArchitecture(
     if (!quiet) console.error(`${file} [${rule}] ${message}`);
   };
 
-  // Only a baseline write consults CI, so the read-only lane needs no env
-  // permission beyond `--allow-env=CI` on the write task.
-  if (writeBaseline && (options.ci ?? Deno.env.get("CI") === "true")) {
+  // Only a baseline write consults CI, so the read-only lane stays env-free.
+  if (writeBaseline && (options.ci ?? process.env.CI === "true")) {
     report(
       "write-baseline-forbidden",
       "refusing --write-baseline because CI is true",
@@ -191,7 +199,7 @@ export function checkArchitecture(
 
   const records = sources.map((full) => {
     const posix = toPosix(full.slice(repoRoot.length + 1));
-    const source = Deno.readTextFileSync(full);
+    const source = readFileSync(full, "utf8");
     const kind: FileKind = fileKind(posix);
     const testImports = productionTestImports(source);
     return {
@@ -208,7 +216,7 @@ export function checkArchitecture(
   if (!writeBaseline && !baseline) {
     report(
       "architecture-baseline-missing",
-      `architecture baseline is missing; write it with deno task check:architecture:baseline`,
+      `architecture baseline is missing; write it with pnpm check:architecture:baseline`,
       toPosix(baselineFile.slice(repoRoot.length + 1)) ||
         "scripts/architecture-baseline.json",
     );
@@ -295,12 +303,8 @@ export function checkArchitecture(
           .map((key) => [key, snapshot[key]!]),
       ),
     };
-    // `scripts/` is tracked, so the baseline directory always exists and the
-    // write task needs permission for the baseline file only.
-    Deno.writeTextFileSync(
-      baselineFile,
-      `${JSON.stringify(payload, null, 2)}\n`,
-    );
+    // `scripts/` is tracked, so the baseline directory always exists.
+    writeFileSync(baselineFile, `${JSON.stringify(payload, null, 2)}\n`);
     if (!quiet) {
       console.log(
         `Wrote ${Object.keys(snapshot).length} architecture baseline entries.`,
@@ -312,7 +316,19 @@ export function checkArchitecture(
   return { ok: errors.length === 0, errors, files: snapshot };
 }
 
-if (import.meta.main) {
-  const result = checkArchitecture(parseArgs(Deno.args));
-  Deno.exitCode = result.ok ? 0 : 1;
+function isEntrypoint(): boolean {
+  const invoked = process.argv[1];
+  if (!invoked) return false;
+  try {
+    return (
+      realpathSync(resolvePath(invoked)) === fileURLToPath(import.meta.url)
+    );
+  } catch {
+    return false;
+  }
+}
+
+if (isEntrypoint()) {
+  const result = checkArchitecture(parseArgs(process.argv.slice(2)));
+  process.exitCode = result.ok ? 0 : 1;
 }

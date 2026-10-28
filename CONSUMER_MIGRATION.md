@@ -17,3 +17,24 @@ Jujutsu commit before the legacy implementation is removed.
 All five consumers have completed that sequence. Repository-specific formats,
 paths, statuses, auxiliary namespaces, and enforcement semantics remain in
 their local config; the package owns only reusable parsing and validation.
+
+## Runtime migration (0.2.0)
+
+The package retired Deno as a repository and execution runtime and is now a
+pure Node library and CLI (Node 22+; pnpm owns installation and tasks). The
+published CLI/bin contract (`spec-validator <command>`) is unchanged.
+
+Consumer impact:
+
+- The `deno` export condition and the built `dist/deno` bundle are removed;
+  Node consumers are unaffected.
+- `init` and `doctor --fix` no longer write `deno.json` tasks or
+  `scripts/check-deno-version.ts`. The canonical consumer wiring is now the
+  `spec:*` package-script aliases that call the installed binary directly
+  (for example `"spec:search": "spec-validator search"`), which existing
+  consumers already use. Repositories may delete the Deno artifacts that
+  older `init`/`doctor` versions wrote; `doctor` no longer reports them.
+- QMD is resolved from the system PATH (`npm install -g @tobilu/qmd@2.5.3`)
+  instead of the repository-local `node_modules/.bin/qmd`, and environmental
+  QMD failures degrade `search` to an executed `rg` fallback with exit
+  status 0 instead of failing.

@@ -21,27 +21,21 @@ mappings, Storybook conventions, and additional validation lanes.
 
 ## Requirements
 
-- Deno 2.9.5
-- Node.js 22 or newer for npm artifact compatibility and optional QMD tooling
+- Node.js 22 or newer
+- pnpm for repository development
 - mdBook when the `build`, `serve`, or aggregate `check` commands are enabled
 
-QMD support is optional and only required for `search` and `index`.
+QMD support is optional and only required for `search` and `index`. The wrapper
+resolves the system `qmd` binary from PATH.
 
 ## Install and initialize
 
-The Deno CLI is the canonical interface:
-
-```bash
-deno add --dev npm:@lapismd/spec-validator
-deno run -A npm:@lapismd/spec-validator init --profile heading
-deno run -A npm:@lapismd/spec-validator check
-```
-
-Node.js consumers can install the same npm artifact and use its package-manager
-binary or typed library exports:
+Install the npm artifact and use its package-manager binary or typed library
+exports:
 
 ```bash
 npm install --save-dev @lapismd/spec-validator
+npx spec-validator init --profile heading
 npx spec-validator check
 ```
 
@@ -112,10 +106,10 @@ Built-in validators are disabled unless a config or profile enables them. Run
 Examples:
 
 ```bash
-deno run -A npm:@lapismd/spec-validator validate --only governance,verification
-deno run -A npm:@lapismd/spec-validator first --base main --head @
-deno run -A npm:@lapismd/spec-validator doctor --fix --skill
-deno run -A npm:@lapismd/spec-validator search -- "SV-GOV-001"
+spec-validator validate --only governance,verification
+spec-validator first --base main --head @
+spec-validator doctor --fix --skill
+spec-validator search -- "SV-GOV-001"
 ```
 
 Pretty color output is used on a TTY. Pass `--json` for versioned,
@@ -124,10 +118,17 @@ piping human-readable output.
 
 ## Optional QMD support
 
-Install `@tobilu/qmd` as a root development dependency when enabling QMD. The
-root Deno configuration must also list `better-sqlite3` and `node-llama-cpp` in
-`allowScripts` so the local index can open. QMD is a discovery cache; canonical
-Markdown remains the authority.
+`search` and `index` use the system-installed `qmd` binary resolved from PATH.
+Install it once per machine:
+
+```bash
+npm install -g --allow-scripts=better-sqlite3,node-llama-cpp @tobilu/qmd@2.5.3
+```
+
+Repair native-module ABI mismatches with `npm rebuild -g better-sqlite3` and
+verify with `spec-validator doctor`. When QMD is unavailable, `search` degrades
+to an executed `rg` fallback and exits 0 with a repair warning. QMD is a
+discovery cache; canonical Markdown remains the authority.
 
 ## Library API
 

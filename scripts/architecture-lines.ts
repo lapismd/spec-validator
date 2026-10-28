@@ -1,7 +1,7 @@
 /**
  * Counted-line metric for SV-ARCH-008: physical lines minus blank lines minus
- * comment-only lines. This is the shared LapisMD community counter ported to
- * the canonical Deno runtime; do not invent a second metric.
+ * comment-only lines. This is the shared LapisMD community counter; do not
+ * invent a second metric.
  */
 
 export function physicalLines(text: string): number {
