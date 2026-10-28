@@ -1,10 +1,6 @@
 import { assertCommandArgs, hasFlag } from "../argv.js";
 import { findConfigPath, loadResolvedConfig } from "../config.js";
-import {
-  DENO_TASKS,
-  PACKAGE_SCRIPT_ALIASES,
-  renderDenoVersionCheck,
-} from "../deno-contract.js";
+import { PACKAGE_SCRIPT_ALIASES } from "../tooling-contract.js";
 import {
   existsSync,
   mkdirSync,
@@ -16,7 +12,7 @@ import {
 } from "../platform/current.js";
 import type { Reporter } from "../reporter.js";
 import type { DoctorCheck, ResolvedConfig } from "../types.js";
-import { resolveQmdBinary } from "./search.js";
+import { qmdBinaryCheck, qmdNativeCheck } from "./doctor-qmd.js";
 import { globalSkillPath, installSkill } from "./skill.js";
 
 function which(command: string): boolean {
@@ -126,65 +122,14 @@ async function inspect(
         : "QMD config is missing or does not match the configured collection",
       fixable: true,
     });
-    const binary = resolveQmdBinary(repoRoot);
-    checks.push({
-      name: "qmd-binary",
-      status: existsSync(binary) ? "pass" : "warn",
-      message: existsSync(binary)
-        ? "local qmd binary present"
-        : "optional qmd binary missing; search will fall back to rg",
-    });
-    const denoPath = path.join(repoRoot, "deno.json");
-    const denoConfig = existsSync(denoPath) ? readJson(denoPath) : {};
-    const allowScripts = Array.isArray(denoConfig.allowScripts)
-      ? denoConfig.allowScripts.filter(
-          (entry): entry is string => typeof entry === "string",
-        )
-      : [];
-    const nativeAllowed = ["better-sqlite3", "node-llama-cpp"].every((name) =>
-      allowScripts.some((entry) => entry === name || entry === `npm:${name}`),
-    );
-    checks.push({
-      name: "deno-native-builds",
-      status: nativeAllowed ? "pass" : "fail",
-      message: nativeAllowed
-        ? "QMD native builds are allowed in deno.json"
-        : "allow better-sqlite3 and node-llama-cpp scripts in deno.json",
-    });
+    checks.push(qmdBinaryCheck());
+    checks.push(qmdNativeCheck(repoRoot));
   }
 
   checks.push({
     name: "mdbook",
     status: which("mdbook") ? "pass" : "warn",
     message: which("mdbook") ? "mdbook is on PATH" : "mdbook is not on PATH",
-  });
-  const denoPath = path.join(repoRoot, "deno.json");
-  const denoConfig = existsSync(denoPath) ? readJson(denoPath) : {};
-  const denoTasks = (denoConfig.tasks ?? {}) as Record<string, string>;
-  const missingDenoTasks = Object.entries(DENO_TASKS).filter(
-    ([name, expected]) => denoTasks[name] !== expected,
-  );
-  checks.push({
-    name: "deno-tasks",
-    status: missingDenoTasks.length ? "fail" : "pass",
-    message: missingDenoTasks.length
-      ? `Deno tasks differ: ${missingDenoTasks
-          .map(([name]) => name)
-          .join(", ")}`
-      : "deno.json has the canonical specification tasks",
-    fixable: true,
-  });
-  const versionPath = path.join(repoRoot, "scripts/check-deno-version.ts");
-  const versionCheckValid =
-    existsSync(versionPath) &&
-    readFileSync(versionPath, "utf8") === renderDenoVersionCheck();
-  checks.push({
-    name: "deno-version",
-    status: versionCheckValid ? "pass" : "fail",
-    message: versionCheckValid
-      ? "Deno 2.9.5 is pinned"
-      : "Deno 2.9.5 version check is missing or differs",
-    fixable: true,
   });
   const packagePath = path.join(repoRoot, "package.json");
   if (existsSync(packagePath)) {
@@ -236,27 +181,6 @@ function applyRepairs(
     repairs.push("spec/book.toml");
   }
   if (appendIgnore(repoRoot, "spec/book/")) repairs.push(".gitignore");
-  const denoPath = path.join(repoRoot, "deno.json");
-  const denoConfig = existsSync(denoPath) ? readJson(denoPath) : {};
-  const currentDenoTasks = (denoConfig.tasks ?? {}) as Record<string, string>;
-  if (
-    Object.entries(DENO_TASKS).some(
-      ([name, command]) => currentDenoTasks[name] !== command,
-    )
-  ) {
-    denoConfig.tasks = { ...currentDenoTasks, ...DENO_TASKS };
-    writeFileSync(denoPath, `${JSON.stringify(denoConfig, null, 2)}\n`);
-    repairs.push("deno.json");
-  }
-  const versionPath = path.join(repoRoot, "scripts/check-deno-version.ts");
-  if (
-    !existsSync(versionPath) ||
-    readFileSync(versionPath, "utf8") !== renderDenoVersionCheck()
-  ) {
-    mkdirSync(path.dirname(versionPath), { recursive: true });
-    writeFileSync(versionPath, renderDenoVersionCheck());
-    repairs.push("scripts/check-deno-version.ts");
-  }
   if (config.validators.qmd) {
     const qmdPath = path.join(repoRoot, config.validators.qmd.configPath);
     const source = existsSync(qmdPath) ? readFileSync(qmdPath, "utf8") : "";

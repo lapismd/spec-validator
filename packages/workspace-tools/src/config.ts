@@ -1,4 +1,5 @@
-import { isAbsolute, relative, resolve, SEPARATOR } from "jsr:@std/path@1.1.6";
+import { readFileSync, readdirSync, realpathSync, statSync } from "node:fs";
+import { isAbsolute, relative, resolve, sep } from "node:path";
 
 import {
   type LinkDeclaration,
@@ -6,7 +7,7 @@ import {
   type ValidatedLink,
   WORKSPACE_SCHEMA_VERSION,
   type WorkspaceDeclaration,
-} from "./types.ts";
+} from "./types.js";
 
 const CONFIG_NAME = "lapismd-workspace.json";
 const ROOT_KEYS = new Set(["schemaVersion", "repository", "links"]);
@@ -23,8 +24,8 @@ const LINK_KEYS = new Set([
 const BUILD_KEYS = new Set(["task", "inputs", "outputs"]);
 const TASK_KEYS = new Set(["inputs", "outputs"]);
 
-interface DenoPackageConfiguration extends PackageManifest {
-  links?: string[];
+function isNotFound(error: unknown): boolean {
+  return (error as NodeJS.ErrnoException).code === "ENOENT";
 }
 
 function objectValue(value: unknown, label: string): Record<string, unknown> {
@@ -277,9 +278,9 @@ export function loadWorkspaceDeclaration(
   const path = resolve(repoRoot, CONFIG_NAME);
   let source: string;
   try {
-    source = Deno.readTextFileSync(path);
+    source = readFileSync(path, "utf8");
   } catch (error) {
-    if (error instanceof Deno.errors.NotFound) {
+    if (isNotFound(error)) {
       throw new Error(`missing ${path}`);
     }
     throw error;
@@ -298,38 +299,20 @@ function withinBoundary(boundary: string, target: string): boolean {
   const candidate = relative(boundary, target);
   return (
     candidate === "" ||
-    (!candidate.startsWith(`..${SEPARATOR}`) && candidate !== "..")
+    (!candidate.startsWith(`..${sep}`) && candidate !== "..")
   );
 }
 
 function readPackageManifest(path: string): PackageManifest {
   const packageJson = resolve(path, "package.json");
   try {
-    return JSON.parse(Deno.readTextFileSync(packageJson)) as PackageManifest;
+    return JSON.parse(readFileSync(packageJson, "utf8")) as PackageManifest;
   } catch (error) {
-    if (error instanceof Deno.errors.NotFound) {
+    if (isNotFound(error)) {
       throw new Error(`missing target manifest ${packageJson}`);
     }
     throw new Error(
       `could not read target manifest ${packageJson}: ${
-        error instanceof Error ? error.message : String(error)
-      }`,
-    );
-  }
-}
-
-function readDenoPackageConfiguration(path: string): DenoPackageConfiguration {
-  const denoJson = resolve(path, "deno.json");
-  try {
-    return JSON.parse(
-      Deno.readTextFileSync(denoJson),
-    ) as DenoPackageConfiguration;
-  } catch (error) {
-    if (error instanceof Deno.errors.NotFound) {
-      throw new Error(`missing Deno package configuration ${denoJson}`);
-    }
-    throw new Error(
-      `could not read Deno package configuration ${denoJson}: ${
         error instanceof Error ? error.message : String(error)
       }`,
     );
@@ -362,10 +345,10 @@ function normalizeBins(manifest: PackageManifest): Record<string, string> {
 }
 
 function newestMtime(path: string): number {
-  const info = Deno.statSync(path);
+  const info = statSync(path);
   let newest = info.mtime?.getTime() ?? 0;
-  if (!info.isDirectory) return newest;
-  for (const entry of Deno.readDirSync(path)) {
+  if (!info.isDirectory()) return newest;
+  for (const entry of readdirSync(path, { withFileTypes: true })) {
     newest = Math.max(newest, newestMtime(resolve(path, entry.name)));
   }
   return newest;
@@ -382,14 +365,14 @@ function validatePackagePath(
   }
   let realPath: string;
   try {
-    realPath = Deno.realPathSync(path);
+    realPath = realpathSync(path);
   } catch (error) {
-    if (error instanceof Deno.errors.NotFound) {
+    if (isNotFound(error)) {
       throw new Error(`${label} is missing ${relativePath}`);
     }
     throw error;
   }
-  const realRoot = Deno.realPathSync(packageRoot);
+  const realRoot = realpathSync(packageRoot);
   if (!withinBoundary(realRoot, realPath)) {
     throw new Error(
       `${label} escapes package root through a symlink: ${relativePath}`,
@@ -398,47 +381,8 @@ function validatePackagePath(
   return path;
 }
 
-export function validateNativeDenoLinks(
-  repoRoot: string,
-  declaration = loadWorkspaceDeclaration(repoRoot),
-): void {
-  const denoJson = resolve(repoRoot, "deno.json");
-  const config = readDenoPackageConfiguration(repoRoot);
-  const actualPaths = relativePathArray(
-    config.links ?? [],
-    `${denoJson}.links`,
-  );
-  const actual = new Map<string, string>();
-  for (const path of actualPaths) {
-    const target = resolve(repoRoot, path);
-    if (actual.has(target)) {
-      throw new Error(`${denoJson}.links resolves duplicate target ${path}`);
-    }
-    actual.set(target, path);
-  }
-
-  const expected = new Map(
-    declaration.links
-      .filter((link) => link.direction === "dependency")
-      .map((link) => [resolve(repoRoot, link.path), link] as const),
-  );
-  for (const [target, link] of expected) {
-    if (!actual.has(target)) {
-      throw new Error(
-        `${denoJson}.links is missing declared dependency ${link.name} at ${link.path}`,
-      );
-    }
-  }
-  for (const [target, path] of actual) {
-    if (!expected.has(target)) {
-      throw new Error(`${denoJson}.links contains undeclared target ${path}`);
-    }
-  }
-}
-
 export function validateWorkspaceLinks(repoRoot: string): ValidatedLink[] {
   const declaration = loadWorkspaceDeclaration(repoRoot);
-  validateNativeDenoLinks(repoRoot, declaration);
   const boundary = resolve(repoRoot, declaration.repository.workspaceRoot);
   return declaration.links.map((link) => {
     const targetPath = resolve(repoRoot, link.path);
@@ -447,12 +391,12 @@ export function validateWorkspaceLinks(repoRoot: string): ValidatedLink[] {
         `${link.name} target escapes workspace root: ${link.path}`,
       );
     }
-    const realBoundary = Deno.realPathSync(boundary);
+    const realBoundary = realpathSync(boundary);
     let realTarget: string;
     try {
-      realTarget = Deno.realPathSync(targetPath);
+      realTarget = realpathSync(targetPath);
     } catch (error) {
-      if (error instanceof Deno.errors.NotFound) {
+      if (isNotFound(error)) {
         throw new Error(`${link.name} target is missing: ${link.path}`);
       }
       throw error;
@@ -475,31 +419,10 @@ export function validateWorkspaceLinks(repoRoot: string): ValidatedLink[] {
         )} does not satisfy ${link.range}`,
       );
     }
-    const denoPackage = readDenoPackageConfiguration(targetPath);
-    if (denoPackage.name !== link.name) {
-      throw new Error(
-        `${link.name} target Deno package declares ${String(denoPackage.name)}`,
-      );
-    }
-    if (
-      !denoPackage.version ||
-      !satisfiesRange(denoPackage.version, link.range)
-    ) {
-      throw new Error(
-        `${link.name} Deno package ${String(
-          denoPackage.version,
-        )} does not satisfy ${link.range}`,
-      );
-    }
     for (const requiredExport of link.requiredExports) {
       if (!hasExport(manifest, requiredExport)) {
         throw new Error(
           `${link.name} is missing required export ${requiredExport}`,
-        );
-      }
-      if (!hasExport(denoPackage, requiredExport)) {
-        throw new Error(
-          `${link.name} Deno package is missing required export ${requiredExport}`,
         );
       }
     }
@@ -514,16 +437,16 @@ export function validateWorkspaceLinks(repoRoot: string): ValidatedLink[] {
       const newestOutput = Math.max(...outputPaths.map(newestMtime));
       if (newestInput > newestOutput) {
         throw new Error(
-          `${link.name} build output is stale; run deno task ${link.build.task} in ${targetPath}`,
+          `${link.name} build output is stale; run pnpm run ${link.build.task} in ${targetPath}`,
         );
       }
     }
     const bins = normalizeBins(manifest);
     for (const [name, path] of Object.entries(bins)) {
       try {
-        Deno.statSync(resolve(targetPath, path));
+        statSync(resolve(targetPath, path));
       } catch (error) {
-        if (error instanceof Deno.errors.NotFound) {
+        if (isNotFound(error)) {
           throw new Error(`${link.name} bin ${name} is missing ${path}`);
         }
         throw error;

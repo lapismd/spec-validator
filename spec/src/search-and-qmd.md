@@ -22,11 +22,11 @@ QMD is a local discovery cache over canonical Markdown. It is not an authority a
 
 ## SV-QMD-002 — Host and fallback
 
-**Requirement.** `@tobilu/qmd` MUST remain an optional peer dependency, and a missing binary, missing native binding, or ABI mismatch MUST print an `rg` fallback instead of pretending the index is authoritative.
+**Requirement.** The wrapper MUST resolve the system `qmd` binary from PATH, and an environmental QMD failure MUST degrade `search` to an executed `rg` fallback with a repair warning and exit status `0` instead of pretending the index is authoritative.
 
 ### Acceptance details
 
-- The wrapper MUST resolve the consumer-local `node_modules/.bin/qmd` and capture its stdout and stderr.
-- A runtime ABI mismatch MUST identify the active Deno or Node compatibility host and tell the operator to reinstall with Deno 2.9.5.
-- A missing native binding MUST tell the operator to allow `better-sqlite3` and `node-llama-cpp` scripts in `deno.json` and reinstall with Deno.
-- The fallback MUST be `rg -n -i --glob '*.md' '<query>' '<selected-source-root>'`, defaulting to spec/src for unscoped consumers.
+- The wrapper MUST resolve `qmd` from the operator PATH, capture its stdout and stderr, and MUST NOT require a repository-local or Deno-installed runtime.
+- An ABI mismatch or missing native binding MUST name the active Node ABI and the exact `npm` system-install repair commands, and an unavailable embedding model MUST advise a retry without `--semantic`.
+- A degraded `search` MUST execute `rg -n -i --glob '*.md' '<query>' '<selected-source-root>'`, defaulting to spec/src for unscoped consumers, print the captured results, warn with the repair command and a `spec-validator doctor` pointer, and exit `0`; an unavailable `rg` MUST print that fallback command instead.
+- Non-zero exit statuses MUST remain reserved for usage errors and for `index`, which MUST report the same repair guidance when a refresh fails.

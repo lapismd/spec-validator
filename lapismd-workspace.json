@@ -11,7 +11,7 @@
           "scripts",
           "packages/workspace-tools/src",
           "package.json",
-          "deno.json"
+          "pnpm-lock.yaml"
         ],
         "outputs": ["dist/index.js", "dist/cli.js"]
       }

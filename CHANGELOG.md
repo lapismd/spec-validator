@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.0
+
+Migrate the package to a pure Node runtime: pnpm and package scripts replace
+the Deno task runner, the `deno` export condition and bundled Deno build are
+removed, and `init`/`doctor` now maintain only the `spec:*` package-script
+aliases that call the installed binary. QMD search resolves the system-installed
+`qmd` from PATH and degrades environmental QMD failures (missing binary, ABI
+mismatch, missing native binding, unavailable embedding model) to an executed
+`rg` fallback with a repair warning and exit status 0; non-zero search exits are
+reserved for usage errors and `index`. `doctor` gains a `qmd-native` probe that
+names the exact npm repair command.
+
 ## 0.1.4
 
 Keep nested book serving live after source and navigation edits, remove deleted staged pages, and resolve named-scope search results to absolute source files with their original line numbers.

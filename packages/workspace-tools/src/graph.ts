@@ -1,11 +1,23 @@
-import { dirname, relative, resolve, SEPARATOR } from "jsr:@std/path@1.1.6";
+import { spawn } from "node:child_process";
+import {
+  lstatSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  readlinkSync,
+  renameSync,
+  type Stats,
+  writeFileSync,
+} from "node:fs";
+import process from "node:process";
+import { dirname, relative, resolve, sep } from "node:path";
 
 import {
   loadWorkspaceDeclaration,
   validateWorkspaceLinks,
   workspaceConfigName,
-} from "./config.ts";
-import type { WorkspaceGraph, WorkspaceGraphNode } from "./types.ts";
+} from "./config.js";
+import type { WorkspaceGraph, WorkspaceGraphNode } from "./types.js";
 
 export interface RunOptions {
   filter?: string;
@@ -24,13 +36,17 @@ interface CacheState {
   entries: Record<string, string>;
 }
 
-const CACHE_FILE = ".deno/lapismd-workspace-task-cache.json";
+const CACHE_FILE = "node_modules/.cache/lapismd-workspace/task-cache.json";
+
+function isNotFound(error: unknown): boolean {
+  return (error as NodeJS.ErrnoException).code === "ENOENT";
+}
 
 function withinBoundary(boundary: string, target: string): boolean {
   const candidate = relative(boundary, target);
   return (
     candidate === "" ||
-    (!candidate.startsWith(`..${SEPARATOR}`) && candidate !== "..")
+    (!candidate.startsWith(`..${sep}`) && candidate !== "..")
   );
 }
 
@@ -45,7 +61,7 @@ function ownedPath(root: string, path: string, label: string): string {
 function cacheState(repoRoot: string): CacheState {
   const path = resolve(repoRoot, CACHE_FILE);
   try {
-    const value = JSON.parse(Deno.readTextFileSync(path)) as CacheState;
+    const value = JSON.parse(readFileSync(path, "utf8")) as CacheState;
     if (
       value.schemaVersion !== 1 ||
       !value.entries ||
@@ -55,7 +71,7 @@ function cacheState(repoRoot: string): CacheState {
     }
     return value;
   } catch (error) {
-    if (error instanceof Deno.errors.NotFound) {
+    if (isNotFound(error)) {
       return { schemaVersion: 1, entries: {} };
     }
     throw error;
@@ -64,31 +80,31 @@ function cacheState(repoRoot: string): CacheState {
 
 function writeCacheState(repoRoot: string, state: CacheState): void {
   const path = resolve(repoRoot, CACHE_FILE);
-  Deno.mkdirSync(dirname(path), { recursive: true });
-  const temporary = `${path}.${Deno.pid}.tmp`;
-  Deno.writeTextFileSync(temporary, `${JSON.stringify(state, null, 2)}\n`);
-  Deno.renameSync(temporary, path);
+  mkdirSync(dirname(path), { recursive: true });
+  const temporary = `${path}.${process.pid}.tmp`;
+  writeFileSync(temporary, `${JSON.stringify(state, null, 2)}\n`);
+  renameSync(temporary, path);
 }
 
 function collectInputFiles(root: string, paths: string[]): string[] {
   const files: string[] = [];
   const visit = (path: string): void => {
-    let info: Deno.FileInfo;
+    let info: Stats;
     try {
-      info = Deno.lstatSync(path);
+      info = lstatSync(path);
     } catch (error) {
-      if (error instanceof Deno.errors.NotFound) {
+      if (isNotFound(error)) {
         throw new Error(`cache input is missing: ${relative(root, path)}`);
       }
       throw error;
     }
-    if (info.isSymlink || info.isFile) {
+    if (info.isSymbolicLink() || info.isFile()) {
       files.push(path);
       return;
     }
-    if (!info.isDirectory) return;
-    const entries = [...Deno.readDirSync(path)].sort((left, right) =>
-      left.name.localeCompare(right.name),
+    if (!info.isDirectory()) return;
+    const entries = readdirSync(path, { withFileTypes: true }).sort((l, r) =>
+      l.name.localeCompare(r.name),
     );
     for (const entry of entries) visit(resolve(path, entry.name));
   };
@@ -110,10 +126,10 @@ async function taskFingerprint(
 ): Promise<string> {
   const parts: string[] = [];
   for (const path of collectInputFiles(root, inputs)) {
-    const info = Deno.lstatSync(path);
-    const bytes = info.isSymlink
-      ? new TextEncoder().encode(Deno.readLinkSync(path))
-      : Deno.readFileSync(path);
+    const info = lstatSync(path);
+    const bytes = info.isSymbolicLink()
+      ? new TextEncoder().encode(readlinkSync(path))
+      : new Uint8Array(readFileSync(path));
     const digest = await crypto.subtle.digest("SHA-256", bytes);
     parts.push(`${relative(root, path)}\0${toHex(digest)}`);
   }
@@ -128,10 +144,10 @@ async function taskFingerprint(
 function outputsExist(root: string, outputs: string[]): boolean {
   return outputs.every((output) => {
     try {
-      Deno.lstatSync(ownedPath(root, output, "cache output"));
+      lstatSync(ownedPath(root, output, "cache output"));
       return true;
     } catch (error) {
-      if (error instanceof Deno.errors.NotFound) return false;
+      if (isNotFound(error)) return false;
       throw error;
     }
   });
@@ -142,10 +158,10 @@ function findRepositoryRoot(start: string, boundary: string): string {
   const limit = resolve(boundary);
   while (true) {
     try {
-      Deno.statSync(resolve(candidate, workspaceConfigName));
+      lstatSync(resolve(candidate, workspaceConfigName));
       return candidate;
     } catch (error) {
-      if (!(error instanceof Deno.errors.NotFound)) throw error;
+      if (!isNotFound(error)) throw error;
     }
     if (candidate === limit || dirname(candidate) === candidate) break;
     candidate = dirname(candidate);
@@ -294,14 +310,14 @@ export function orderWorkspaceNodes(
 }
 
 const defaultRunner: TaskRunner = (node, task) => {
-  const command = new Deno.Command(Deno.execPath(), {
-    args: ["task", task],
+  const child = spawn("pnpm", ["run", task], {
     cwd: node.root,
-    stdin: "inherit",
-    stdout: "inherit",
-    stderr: "inherit",
+    stdio: "inherit",
   });
-  return command.spawn().status.then((status) => status.code);
+  return new Promise<number>((resolve) => {
+    child.once("error", () => resolve(1));
+    child.once("close", (code) => resolve(code ?? 1));
+  });
 };
 
 export async function runWorkspaceTask(

@@ -2,16 +2,15 @@ export {
   loadWorkspaceDeclaration,
   parseWorkspaceDeclaration,
   satisfiesRange,
-  validateNativeDenoLinks,
   validateWorkspaceLinks,
   workspaceConfigName,
-} from "./config.ts";
+} from "./config.js";
 export {
   buildWorkspaceGraph,
   orderWorkspaceNodes,
   runWorkspaceTask,
   selectWorkspaceNodes,
-} from "./graph.ts";
-export { syncWorkspaceLinks } from "./links.ts";
-export { createPortableManifest, writePortableManifest } from "./pack.ts";
-export type * from "./types.ts";
+} from "./graph.js";
+export { syncWorkspaceLinks } from "./links.js";
+export { createPortableManifest, writePortableManifest } from "./pack.js";
+export type * from "./types.js";

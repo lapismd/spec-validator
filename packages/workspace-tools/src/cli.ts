@@ -1,11 +1,14 @@
-#!/usr/bin/env -S deno run
+#!/usr/bin/env -S tsx
 
-import { resolve } from "jsr:@std/path@1.1.6";
+import process from "node:process";
+import { realpathSync } from "node:fs";
+import { resolve as resolvePath } from "node:path";
+import { fileURLToPath } from "node:url";
 
-import { validateWorkspaceLinks } from "./config.ts";
-import { runWorkspaceTask } from "./graph.ts";
-import { syncWorkspaceLinks } from "./links.ts";
-import { writePortableManifest } from "./pack.ts";
+import { validateWorkspaceLinks } from "./config.js";
+import { runWorkspaceTask } from "./graph.js";
+import { syncWorkspaceLinks } from "./links.js";
+import { writePortableManifest } from "./pack.js";
 
 function usage(): string {
   return [
@@ -28,10 +31,12 @@ function takeOption(args: string[], name: string): string | undefined {
   return value;
 }
 
-export async function main(input = Deno.args): Promise<number> {
+export async function main(
+  input: string[] = process.argv.slice(2),
+): Promise<number> {
   const args = [...input];
   try {
-    const root = resolve(takeOption(args, "--root") ?? Deno.cwd());
+    const root = resolvePath(takeOption(args, "--root") ?? process.cwd());
     const command = args.shift();
     if (command === "links") {
       const action = args.shift();
@@ -75,7 +80,7 @@ export async function main(input = Deno.args): Promise<number> {
       const output = takeOption(args, "--output");
       if (!source || !output || args.length > 0) throw new Error(usage());
       writePortableManifest(root, source, output);
-      console.log(`wrote portable manifest ${resolve(root, output)}`);
+      console.log(`wrote portable manifest ${resolvePath(root, output)}`);
       return 0;
     }
     throw new Error(usage());
@@ -85,4 +90,18 @@ export async function main(input = Deno.args): Promise<number> {
   }
 }
 
-if (import.meta.main) Deno.exit(await main());
+function isEntrypoint(): boolean {
+  const invoked = process.argv[1];
+  if (!invoked) return false;
+  try {
+    return (
+      realpathSync(resolvePath(invoked)) === fileURLToPath(import.meta.url)
+    );
+  } catch {
+    return false;
+  }
+}
+
+if (isEntrypoint()) {
+  process.exitCode = await main();
+}

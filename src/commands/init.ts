@@ -1,10 +1,6 @@
 import { assertCommandArgs, hasFlag, readFlag, UsageError } from "../argv.js";
 import { findConfigPath } from "../config.js";
-import {
-  DENO_TASKS,
-  PACKAGE_SCRIPT_ALIASES,
-  renderDenoVersionCheck,
-} from "../deno-contract.js";
+import { PACKAGE_SCRIPT_ALIASES } from "../tooling-contract.js";
 import {
   existsSync,
   mkdirSync,
@@ -125,36 +121,6 @@ function ensureIgnore(repoRoot: string, line: string): boolean {
   return true;
 }
 
-function ensureDenoContract(repoRoot: string): string[] {
-  const written: string[] = [];
-  const denoPath = path.join(repoRoot, "deno.json");
-  const denoConfig = existsSync(denoPath)
-    ? (JSON.parse(readFileSync(denoPath, "utf8")) as {
-        tasks?: Record<string, string>;
-      })
-    : {};
-  denoConfig.tasks ??= {};
-  let denoChanged = !existsSync(denoPath);
-  for (const [name, command] of Object.entries(DENO_TASKS)) {
-    if (denoConfig.tasks[name]) continue;
-    denoConfig.tasks[name] = command;
-    denoChanged = true;
-  }
-  if (denoChanged) {
-    writeFileSync(denoPath, `${JSON.stringify(denoConfig, null, 2)}\n`);
-    written.push("deno.json");
-  }
-  if (
-    writeIfMissing(
-      path.join(repoRoot, "scripts/check-deno-version.ts"),
-      renderDenoVersionCheck(),
-    )
-  ) {
-    written.push("scripts/check-deno-version.ts");
-  }
-  return written;
-}
-
 export function initCommand(
   repoRoot: string,
   argv: string[],
@@ -212,7 +178,6 @@ export function initCommand(
     written.push("spec/src/verification.md");
   }
   if (ensureIgnore(repoRoot, "spec/book/")) written.push(".gitignore");
-  written.push(...ensureDenoContract(repoRoot));
 
   const packagePath = path.join(repoRoot, "package.json");
   if (existsSync(packagePath)) {

@@ -1,6 +1,6 @@
 {
   "name": "@lapismd/spec-validator",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "description": "Configurable specification, Storybook-catalog, QMD, and spec-first validation CLI for LapisMD repositories.",
   "keywords": [
     "specification",
@@ -31,7 +31,6 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "deno": "./dist/deno/index.js",
       "node": "./dist/index.js",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
@@ -46,48 +45,57 @@
     "LICENSE"
   ],
   "engines": {
-    "deno": "2.9.5",
     "node": ">=22"
   },
+  "packageManager": "pnpm@10.34.5",
   "scripts": {
-    "build": "deno task build",
-    "build:node": "deno task build:node",
-    "prepare": "deno task build",
-    "prepack": "deno task build",
-    "typecheck": "deno task typecheck",
-    "test": "deno task test",
-    "publint": "deno task publint",
-    "spec:validate": "deno task spec:validate",
-    "spec:test": "deno task test",
-    "spec:build": "deno task spec:build",
-    "spec:serve": "deno task spec:serve",
-    "spec:first": "deno task spec:first",
-    "spec:check": "deno task spec:check",
-    "spec:index": "deno task spec:index",
-    "spec:search": "deno task spec:search",
-    "spec:lint": "deno task spec:lint",
-    "doctor": "deno task doctor",
-    "fmt": "deno task fmt",
-    "fmt:check": "deno task fmt:check"
-  },
-  "peerDependencies": {
-    "@tobilu/qmd": "2.5.3"
-  },
-  "peerDependenciesMeta": {
-    "@tobilu/qmd": {
-      "optional": true
-    }
+    "build": "pnpm run build:node",
+    "build:node": "tsx ./scripts/clean-node-output.ts && tsc -p tsconfig.node-build.json && tsx ./scripts/prepare-cli-bin.ts",
+    "prepare": "pnpm run build",
+    "prepack": "pnpm run build",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.node-build.json --noEmit",
+    "audit:runtime": "tsx ./scripts/check-runtime-boundaries.ts",
+    "check:architecture": "tsx ./scripts/check-architecture.ts",
+    "check:architecture:baseline": "tsx ./scripts/check-architecture.ts --write-baseline",
+    "test:node": "node --import tsx --import ./src/test-setup.ts --test 'src/**/*.spec.ts'",
+    "test:architecture": "node --import tsx --test ./tests/architecture.test.ts",
+    "test:workspace": "node --import tsx --test ./packages/workspace-tools/src/workspace-tools.test.ts",
+    "test:all": "pnpm run test:workspace && pnpm run test:architecture && pnpm run test:node",
+    "test": "pnpm run build && pnpm run test:all",
+    "publint": "pnpm run build && publint",
+    "spec:validate": "pnpm run build && node ./dist/cli.js validate",
+    "spec:test": "pnpm run test",
+    "spec:build": "pnpm run build && node ./dist/cli.js build",
+    "spec:serve": "pnpm run build && node ./dist/cli.js serve",
+    "spec:first": "pnpm run build && node ./dist/cli.js first",
+    "spec:check": "pnpm run build && node ./dist/cli.js check",
+    "spec:index": "pnpm run build && node ./dist/cli.js index",
+    "spec:search": "pnpm run build && node ./dist/cli.js search",
+    "spec:lint": "pnpm run build && node ./dist/cli.js validate --only markdownlint",
+    "doctor": "pnpm run build && node ./dist/cli.js doctor",
+    "workspace:check": "tsx ./packages/workspace-tools/src/cli.ts links check",
+    "workspace:sync": "tsx ./packages/workspace-tools/src/cli.ts links sync",
+    "workspace:run": "tsx ./packages/workspace-tools/src/cli.ts run",
+    "workspace:pack": "tsx ./packages/workspace-tools/src/cli.ts pack",
+    "ci": "pnpm install --frozen-lockfile",
+    "fmt": "prettier . --write",
+    "fmt:check": "prettier . --check",
+    "check": "pnpm run typecheck && pnpm run audit:runtime && pnpm run check:architecture && pnpm run spec:check && pnpm run publint"
   },
   "dependencies": {
     "jiti": "^2.6.1",
     "typescript": "^5.9.3"
   },
   "devDependencies": {
-    "@tobilu/qmd": "2.5.3",
     "@types/node": "^22.15.0",
     "markdownlint-cli2": "^0.22.1",
     "prettier": "^3.6.2",
     "publint": "^0.3.24",
     "tsx": "^4.20.5"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }

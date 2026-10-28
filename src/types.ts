@@ -380,6 +380,8 @@ export interface JsonReport {
   lanes?: CheckLaneResult[];
   validators?: Array<{ name: string; enabled: boolean; options: unknown }>;
   results?: unknown;
+  degraded?: boolean;
+  warning?: string;
   stats?: Record<string, number | string>;
   message?: string;
 }

@@ -27,7 +27,7 @@ Specification changes precede or accompany protected implementation. Updating an
 | Specification chapters, book, QMD config, and agent guide | `spec-governance.md`     |
 | Package manifests and build scripts                       | `architecture.md`        |
 | Counted-line architecture checker and baseline            | `architecture.md`        |
-| Deno workspace and cross-repository tooling               | `workspace-tools.md`     |
+| Workspace declaration and cross-repository tooling        | `workspace-tools.md`     |
 
 ## SV-GOV-002 — Verification matrix
 
@@ -64,11 +64,11 @@ Specification changes precede or accompany protected implementation. Updating an
 
 ## SV-GOV-005 — Generated artifacts
 
-**Requirement.** Generated mdBook output, QMD databases, and Deno workspace-task cache state MUST remain untracked, and the ignore rules MUST stay committed.
+**Requirement.** Generated mdBook output, QMD databases, and workspace task-cache state MUST remain untracked, and the ignore rules MUST stay committed.
 
 ### Acceptance details
 
-- `.gitignore` MUST contain `spec/book/`, `.deno/`, and `.qmd/index.sqlite*` when QMD is enabled, and staged navigation MUST ignore `spec/.generated/`.
+- `.gitignore` MUST contain `spec/book/` and, when QMD is enabled, `.qmd/index.sqlite*`, and staged navigation MUST ignore `spec/.generated/`.
 - Tracked files under `spec/book/` MUST fail the book validator.
 - Doctor `--fix` MAY append missing ignore lines and MUST NOT invent requirement IDs.
 
@@ -80,7 +80,7 @@ Specification changes precede or accompany protected implementation. Updating an
 
 - The guide MUST tell agents to update the owning chapter before protected implementation.
 - The guide MUST treat QMD hits as a cache and require opening the returned `spec/src` file.
-- The guide MUST require `deno task spec:check` and `deno task build:node` before a verified commit.
+- The guide MUST require `pnpm spec:check` and `pnpm build:node` before a verified commit.
 - README and skill text MUST NOT replace this guide as the implementation contract.
 
 ## SV-GOV-007 — Published dependency policy

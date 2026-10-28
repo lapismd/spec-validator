@@ -1,10 +1,16 @@
-import { countedLines, physicalLines } from "../scripts/architecture-lines.ts";
+import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import process from "node:process";
+import { test } from "node:test";
+import { fileURLToPath } from "node:url";
+
+import { countedLines, physicalLines } from "../scripts/architecture-lines.js";
 import {
   fileKind,
   isDumpPath,
   isTestSpecifier,
-} from "../scripts/architecture-policy.ts";
-import { checkArchitecture, parseArgs } from "../scripts/check-architecture.ts";
+} from "../scripts/architecture-policy.js";
+import { checkArchitecture, parseArgs } from "../scripts/check-architecture.js";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -16,15 +22,11 @@ function assertEqual<T>(actual: T, expected: T, message: string): void {
   }
 }
 
-const repositoryRoot = new URL("..", import.meta.url).pathname.replace(
+const repositoryRoot = fileURLToPath(new URL("..", import.meta.url)).replace(
   /\/$/u,
   "",
 );
 const fixturesRoot = `${repositoryRoot}/scripts/architecture-fixtures`;
-
-function decode(bytes: Uint8Array): string {
-  return new TextDecoder().decode(bytes);
-}
 
 function run(
   fixture: string,
@@ -43,22 +45,18 @@ function run(
 }
 
 function spawnChecker(args: string[], env: Record<string, string> = {}) {
-  return new Deno.Command("deno", {
-    args: [
-      "run",
-      "--no-prompt",
-      "--allow-all",
-      "./scripts/check-architecture.ts",
-      ...args,
-    ],
-    cwd: repositoryRoot,
-    env,
-    stdout: "piped",
-    stderr: "piped",
-  }).outputSync();
+  return spawnSync(
+    process.execPath,
+    ["--import", "tsx", "./scripts/check-architecture.ts", ...args],
+    {
+      cwd: repositoryRoot,
+      env: { ...process.env, ...env },
+      encoding: "utf8",
+    },
+  );
 }
 
-Deno.test("counted-line metric ignores blank and comment-only lines", () => {
+test("counted-line metric ignores blank and comment-only lines", () => {
   const source = [
     "export const n = 1;",
     "",
@@ -82,7 +80,7 @@ Deno.test("counted-line metric ignores blank and comment-only lines", () => {
   );
 });
 
-Deno.test("file kinds classify tests, scripts, and production", () => {
+test("file kinds classify tests, scripts, and production", () => {
   assertEqual(fileKind("src/model.ts"), "production", "src module");
   assertEqual(fileKind("src/model.spec.ts"), "test", "spec module");
   assertEqual(
@@ -91,10 +89,14 @@ Deno.test("file kinds classify tests, scripts, and production", () => {
     "workspace test",
   );
   assertEqual(fileKind("scripts/check-architecture.ts"), "script", "script");
-  assertEqual(fileKind("tests/deno-cli.test.ts"), "test", "tests directory");
+  assertEqual(
+    fileKind("tests/architecture.test.ts"),
+    "test",
+    "tests directory",
+  );
 });
 
-Deno.test("dump filenames and test specifiers are rejected", () => {
+test("dump filenames and test specifiers are rejected", () => {
   for (const name of ["utils", "helpers", "common", "services"]) {
     assert(isDumpPath(`src/${name}.ts`), `src/${name}.ts must be rejected`);
     assert(isDumpPath(`src/${name}/model.ts`), `src/${name}/ must be rejected`);
@@ -108,7 +110,7 @@ Deno.test("dump filenames and test specifiers are rejected", () => {
   assert(!isTestSpecifier("./model.ts"), "production specifier");
 });
 
-Deno.test("a new production file over 300 counted lines fails", () => {
+test("a new production file over 300 counted lines fails", () => {
   const result = run("new-oversize");
   assert(!result.ok, "oversize new file must fail");
   assert(result.rules.includes("new-file-budget"), result.rules.join(","));
@@ -118,20 +120,20 @@ Deno.test("a new production file over 300 counted lines fails", () => {
   );
 });
 
-Deno.test("counted-line growth of a baselined file fails", () => {
+test("counted-line growth of a baselined file fails", () => {
   const result = run("growth");
   assert(!result.ok, "growth must fail");
   assert(result.rules.includes("counted-line-growth"), result.rules.join(","));
 });
 
-Deno.test("a valid extraction with updated budgets passes", () => {
+test("a valid extraction with updated budgets passes", () => {
   const result = run("extraction");
   assert(result.ok, result.messages.join("; "));
   assert(!result.rules.includes("new-file-budget"), "must not report budget");
   assert(!result.rules.includes("counted-line-growth"), "must not grow");
 });
 
-Deno.test("production imports of tests fail", () => {
+test("production imports of tests fail", () => {
   const result = run("production-test-import");
   assert(!result.ok, "production test import must fail");
   assert(
@@ -140,13 +142,13 @@ Deno.test("production imports of tests fail", () => {
   );
 });
 
-Deno.test("a generic dump filename fails", () => {
+test("a generic dump filename fails", () => {
   const result = run("dump-filename");
   assert(!result.ok, "dump filename must fail");
   assert(result.rules.includes("dump-filename"), result.rules.join(","));
 });
 
-Deno.test("a renamed path missing from disk fails", () => {
+test("a renamed path missing from disk fails", () => {
   const result = run("rename-missing");
   assert(!result.ok, "renamed baseline path must fail");
   assert(
@@ -155,7 +157,7 @@ Deno.test("a renamed path missing from disk fails", () => {
   );
 });
 
-Deno.test("a missing baseline file fails closed", () => {
+test("a missing baseline file fails closed", () => {
   const result = run("missing-baseline");
   assert(!result.ok, "missing baseline must fail");
   assert(
@@ -164,25 +166,25 @@ Deno.test("a missing baseline file fails closed", () => {
   );
 });
 
-Deno.test("a root without source files fails closed", () => {
+test("a root without source files fails closed", () => {
   const result = run("empty-root");
   assert(!result.ok, "empty root must fail");
   assert(result.rules.includes("no-inputs"), result.rules.join(","));
 });
 
-Deno.test("a comment-only edit does not change counted lines", () => {
+test("a comment-only edit does not change counted lines", () => {
   const result = run("comment-only");
   assert(result.ok, result.messages.join("; "));
   assert(!result.rules.includes("counted-line-growth"), "comments are free");
 });
 
-Deno.test("a stale budget above the current size plus slack fails", () => {
+test("a stale budget above the current size plus slack fails", () => {
   const result = run("stale-budget");
   assert(!result.ok, "stale budget must fail");
   assert(result.rules.includes("stale-budget"), result.rules.join(","));
 });
 
-Deno.test("--write-baseline is refused when CI is true", () => {
+test("--write-baseline is refused when CI is true", () => {
   const result = checkArchitecture({
     root: `${fixturesRoot}/empty-root`,
     writeBaseline: true,
@@ -196,7 +198,7 @@ Deno.test("--write-baseline is refused when CI is true", () => {
   );
 });
 
-Deno.test("argument parsing exposes root, baseline, and write flags", () => {
+test("argument parsing exposes root, baseline, and write flags", () => {
   const options = parseArgs([
     "--root",
     "/tmp/example",
@@ -216,38 +218,39 @@ Deno.test("argument parsing exposes root, baseline, and write flags", () => {
   assertEqual(parseArgs([]).writeBaseline, false, "default write flag");
 });
 
-Deno.test("the CLI exits non-zero for a failing tree", () => {
+test("the CLI exits non-zero for a failing tree", () => {
   // No --quiet here: the test asserts on the reported rule text.
   const result = spawnChecker(["--root", `${fixturesRoot}/new-oversize`]);
-  assertEqual(result.code, 1, "failing tree exit code");
+  assertEqual(result.status, 1, "failing tree exit code");
   assert(
-    decode(result.stderr).includes("new-file-budget"),
-    decode(result.stderr),
+    (result.stderr ?? "").includes("new-file-budget"),
+    result.stderr ?? "",
   );
 });
 
-Deno.test("the CLI refuses to write a baseline when CI=true", () => {
+test("the CLI refuses to write a baseline when CI=true", () => {
   const result = spawnChecker(
     ["--root", `${fixturesRoot}/empty-root`, "--write-baseline"],
     { CI: "true" },
   );
-  assertEqual(result.code, 1, "CI write exit code");
+  assertEqual(result.status, 1, "CI write exit code");
   assert(
-    decode(result.stderr).includes("write-baseline-forbidden"),
-    decode(result.stderr),
+    (result.stderr ?? "").includes("write-baseline-forbidden"),
+    result.stderr ?? "",
   );
 });
 
-Deno.test("the repository architecture baseline passes", () => {
+test("the repository architecture baseline passes", () => {
   const result = spawnChecker([]);
-  const output = `${decode(result.stdout)}${decode(result.stderr)}`;
-  assertEqual(result.code, 0, `deno task check:architecture failed: ${output}`);
+  const output = `${result.stdout ?? ""}${result.stderr ?? ""}`;
+  assertEqual(result.status, 0, `pnpm check:architecture failed: ${output}`);
 });
 
-Deno.test("the committed baseline covers every audited source root", () => {
+test("the committed baseline covers every audited source root", () => {
   const baseline = JSON.parse(
-    Deno.readTextFileSync(
+    readFileSync(
       `${repositoryRoot}/scripts/architecture-baseline.json`,
+      "utf8",
     ),
   ) as { limits: Record<string, number>; files: Record<string, unknown> };
   assertEqual(baseline.limits.newProductionCountedLines, 300, "prod limit");
