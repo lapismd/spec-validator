@@ -147,13 +147,13 @@ jobs:
           PACKAGE_NAME: "@lapismd/spec-validator"
           VERSION: ${{ needs.package-gate.outputs.version }}
         run: |
-          for attempt in $(seq 1 12); do
+          for attempt in $(seq 1 36); do
             published="$(npm view "${PACKAGE_NAME}@${VERSION}" version --registry=https://registry.npmjs.org 2>/dev/null || true)"
             if [ "$published" = "$VERSION" ]; then
               exit 0
             fi
-            if [ "$attempt" = "12" ]; then
-              echo "${PACKAGE_NAME}@${VERSION} was not available from npm after 120 seconds" >&2
+            if [ "$attempt" = "36" ]; then
+              echo "${PACKAGE_NAME}@${VERSION} was not available from npm after 360 seconds" >&2
               exit 1
             fi
             sleep 10
