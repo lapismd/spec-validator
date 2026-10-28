@@ -138,6 +138,6 @@ in `scripts/check-runtime-boundaries.ts`.
 
 The bounded-document delivery extracts validator defaults, document-role classification and JJ diff parsing into owned modules before recording the updated counted-line baseline. New modules remain inside the 300-line budget.
 
-Release qualification installs mdBook 0.5.2 before canonical checks and the actual nested-book regression. The failed v0.1.1 package gate exposed an absent CI binary, not a passing substitute; v0.1.2 retains that regression and qualifies the explicit prerequisite.
+Release qualification installs mdBook 0.5.2 before canonical checks and the actual nested-book regression. The failed v0.1.1 package gate exposed an absent CI binary, not a passing substitute; v0.1.2 retains that regression and qualifies the explicit prerequisite. The 0.2.0 gate runs entirely on Node: pnpm installs from the frozen lockfile and the canonical checks, tests, and publint run without a Deno toolchain.
 
 The verified release tarball lives under `.release/`; artifact upload explicitly includes hidden files while restricting its path to that one tarball pattern. The v0.1.2 gate passed all tests but artifact upload excluded the hidden directory; v0.1.3 preserves the failed tag and the exact validated artifact boundary.
