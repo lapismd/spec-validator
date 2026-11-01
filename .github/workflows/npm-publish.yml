@@ -127,9 +127,7 @@ jobs:
       - package-gate
       - publish-production
     if: >-
-      always() &&
-      needs.package-gate.result == 'success' &&
-      (needs.publish-production.result == 'success' || needs.publish-production.result == 'skipped')
+      always() && needs.package-gate.result == 'success' && (needs.publish-production.result == 'success' || needs.publish-production.result == 'skipped')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -202,3 +200,16 @@ jobs:
           test "$(gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)" = "$GITHUB_REF_NAME"
           test "$(gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = "false"
           test "$(gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json isPrerelease --jq .isPrerelease)" = "false"
+  notify-dependencies:
+    name: Notify dependency consumers
+    needs:
+      - verify-provenance
+    if: always() && needs.verify-provenance.result == 'success'
+    permissions:
+      contents: read
+    uses: lapismd/dependency-automation/.github/workflows/notify.yml@ea9d35b12b612467bbabf1c6271ffa41b5eda4ba
+    with:
+      automation-ref: ea9d35b12b612467bbabf1c6271ffa41b5eda4ba
+      source-sha: ${{ github.sha }}
+    secrets:
+      app-private-key: ${{ secrets.LAPIS_DEPENDENCY_APP_PRIVATE_KEY }}

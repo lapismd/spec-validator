@@ -2,6 +2,12 @@
 
 The repository is a pure Node package: pnpm owns dependency installation and repository tasks, TypeScript compiles `src` to the published `dist` output, and Node 22 or newer is the only runtime requirement for contributors and consumers.
 
+Trusted dependency-bot pull requests use the shared PR-author specification
+exemption for repository automation. Aggregate commands retain their functional
+checks, and ordinary pull requests retain specification validation. Verified npm
+publication may notify the shared dependency coordinator; notifications cannot
+publish, merge, sign or deploy anything. Existing release gates remain required.
+
 ## Public surface coverage
 
 | Surface                | Public boundary | Requirement |
