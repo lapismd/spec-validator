@@ -2,6 +2,10 @@
 
 Specification changes precede or accompany protected implementation. Updating an unrelated chapter does not satisfy a mapped change.
 
+The 0.2.1 patch preparation records the existing configured-matrix doctor fix
+and current-version artifact evidence under SV-DOC-004 and SV-ARCH-006/007.
+The mapped canonical owners and exact-range release gates remain unchanged.
+
 ## Public surface coverage
 
 | Surface             | Public boundary | Requirement |

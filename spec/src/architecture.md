@@ -8,6 +8,11 @@ checks, and ordinary pull requests retain specification validation. Verified npm
 publication may notify the shared dependency coordinator; notifications cannot
 publish, merge, sign or deploy anything. Existing release gates remain required.
 
+The 0.2.1 patch candidate prepares the merged configured-matrix doctor repair
+from `5094d832858cadf22f16956b7939552d59fed72a`. SV-ARCH-006/007 retain the
+same Node 22+ artifact allowlist, frozen dependency graph and immutable-tag
+trusted-publish gates; release preparation creates no tag or publication.
+
 ## Public surface coverage
 
 | Surface                | Public boundary | Requirement |
