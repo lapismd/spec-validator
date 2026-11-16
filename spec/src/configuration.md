@@ -70,3 +70,7 @@ validator exists yet. The counted-line contract itself is normative in
 [Architecture](./architecture.md) as SV-ARCH-008 and SV-ARCH-009.
 
 The release workflow is mapped to Architecture alongside package metadata so installation and publication changes retain same-change canonical coverage.
+
+Doctor canonical-file discovery consumes the existing resolved verification
+`file`/`files` options without adding schema fields or consumer path defaults.
+The spec-first map includes its owned `doctor-files` module under Doctor and init.

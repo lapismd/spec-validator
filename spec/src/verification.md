@@ -32,6 +32,7 @@
 | SV-DOC-001  | Implemented | `src/commands/init.ts`                                                                                                              |
 | SV-DOC-002  | Implemented | `src/commands/doctor.ts`; `src/commands/doctor-qmd.ts` native-module probe                                                          |
 | SV-DOC-003  | Implemented | `src/commands/doctor.ts` `--fix`                                                                                                    |
+| SV-DOC-004  | Implemented | `src/commands/doctor-files.ts`; public CLI regression `src/commands/doctor-files.spec.ts`                                           |
 | SV-QMD-001  | Implemented | `src/commands/search.ts`; `.qmd/index.yml`; `src/commands/search-results.spec.ts` absolute scoped paths                             |
 | SV-QMD-002  | Implemented | `src/commands/search.ts` PATH resolution and degraded `rg` fallback; `src/commands/search.spec.ts` exit-status and warning contract |
 | SV-SKL-001  | Implemented | `src/commands/skill.ts`; `skill/spec-validator/SKILL.md`                                                                            |
