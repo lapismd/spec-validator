@@ -147,3 +147,7 @@ The bounded-document delivery extracts validator defaults, document-role classif
 Release qualification installs mdBook 0.5.2 before canonical checks and the actual nested-book regression. The failed v0.1.1 package gate exposed an absent CI binary, not a passing substitute; v0.1.2 retains that regression and qualifies the explicit prerequisite. The 0.2.0 gate runs entirely on Node: pnpm installs from the frozen lockfile and the canonical checks, tests, and publint run without a Deno toolchain.
 
 The verified release tarball lives under `.release/`; artifact upload explicitly includes hidden files while restricting its path to that one tarball pattern. The v0.1.2 gate passed all tests but artifact upload excluded the hidden directory; v0.1.3 preserves the failed tag and the exact validated artifact boundary.
+
+Configured doctor discovery is extracted into the bounded `doctor-files` command
+module. The original doctor module's counted-line budget decreases; the public
+Node CLI/build/runtime contract remains unchanged.

@@ -4,11 +4,12 @@
 
 ## Public surface coverage
 
-| Surface           | Public boundary | Requirement |
-| ----------------- | --------------- | ----------- |
-| Init scaffolds    | Doctor and init | SV-DOC-001  |
-| Doctor report     | Doctor and init | SV-DOC-002  |
-| Doctor fix safety | Doctor and init | SV-DOC-003  |
+| Surface                        | Public boundary | Requirement |
+| ------------------------------ | --------------- | ----------- |
+| Init scaffolds                 | Doctor and init | SV-DOC-001  |
+| Doctor report                  | Doctor and init | SV-DOC-002  |
+| Doctor fix safety              | Doctor and init | SV-DOC-003  |
+| Configured canonical discovery | Doctor and init | SV-DOC-004  |
 
 ## SV-DOC-001 — Init scaffolds
 
@@ -42,3 +43,32 @@
 - `--fix` MUST report each applied repair.
 - Canonical Markdown under `spec/src` MUST remain untouched.
 - A repair that cannot be applied safely MUST stay a finding.
+
+## SV-DOC-004 — Configured canonical discovery
+
+**Requirement.** Doctor MUST discover verification matrices from the resolved validator configuration rather than require a fixed consumer layout.
+
+### Acceptance details
+
+- Enabled verification MUST use `file` when `files` is empty, otherwise match the configured regular expressions against Markdown chapter paths relative to `specDir`.
+- Missing literal files and empty pattern selections MUST fail even when an unselected default matrix exists.
+- Every selected matrix MUST receive a discrete presence check; disabled verification MUST impose no matrix requirement.
+- A missing `SUMMARY.md` MUST fail independently of verification selection.
+
+## Qualification evidence
+
+The public CLI regression records5 failures and1 pass before repair, covering
+nested literal/pattern selection, precedence and disabled verification. It also
+retains default/missing-file controls, summary failure and strict wrapped-alias
+warnings. Terminal's configured `current/verification.md` is the original
+consumer reproduction; packed CLI acceptance remains distinct from adoption.
+
+The repaired source passes6/6 focused CLI tests and the full check: typecheck,
+Node runtime audit, lowered architecture budget,5 specification lanes,
+6 workspace tests,19 architecture controls,67 Node tests, mdBook and publint.
+Formatter and own doctor/QMD checks pass with the intentional wrapped-alias
+warning retained. A temporary packed public CLI (SHA256
+77f4ad226c357eab0a00686816eeb33a0c3f9b2fd3e86128dbe3bb3546f6f361)
+accepts Terminal's configured matrix with10 passes and one wrapped-alias warning;
+Terminal manifest, lock, workflows and WIP are unchanged. No package is published
+or consumer dependency adopted by this source qualification.

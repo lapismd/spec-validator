@@ -13,6 +13,7 @@ import {
 import type { Reporter } from "../reporter.js";
 import type { DoctorCheck, ResolvedConfig } from "../types.js";
 import { qmdBinaryCheck, qmdNativeCheck } from "./doctor-qmd.js";
+import { canonicalFileChecks } from "./doctor-files.js";
 import { globalSkillPath, installSkill } from "./skill.js";
 
 function which(command: string): boolean {
@@ -76,15 +77,7 @@ async function inspect(
       ],
     };
   }
-  for (const file of ["SUMMARY.md", "verification.md"]) {
-    const relative = `${config.specDir}/${file}`;
-    const present = existsSync(path.join(repoRoot, relative));
-    checks.push({
-      name: relative,
-      status: present ? "pass" : "fail",
-      message: present ? "present" : "missing canonical chapter",
-    });
-  }
+  checks.push(...canonicalFileChecks(repoRoot, config));
   if (config.validators.book) {
     const present = existsSync(path.join(repoRoot, "spec/book.toml"));
     checks.push({

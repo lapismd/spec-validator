@@ -143,8 +143,8 @@
       "forbiddenImportCount": 0
     },
     "src/commands/doctor.ts": {
-      "countedLines": 250,
-      "physicalLines": 258,
+      "countedLines": 243,
+      "physicalLines": 251,
       "forbiddenImportCount": 0
     },
     "src/commands/first.ts": {
