@@ -14,8 +14,8 @@
 | SV-ARCH-003 | Implemented | `src/types.ts`; `src/commands/validate.ts`                                                                                          |
 | SV-ARCH-004 | Implemented | PATH resolution contract; dependency-free published manifest checks                                                                 |
 | SV-ARCH-005 | Implemented | runtime-boundary audit, frozen-lockfile CI, and publint tests                                                                       |
-| SV-ARCH-006 | Implemented | `package.json`; package publication contract test; packed consumer suite                                                            |
-| SV-ARCH-007 | Implemented | `.github/workflows/npm-publish.yml`; tag gate and OIDC provenance verification                                                      |
+| SV-ARCH-006 | Implemented | `package.json`; package publication contract test; packed consumer suite; 0.2.1 artifact preparation                                |
+| SV-ARCH-007 | Implemented | `.github/workflows/npm-publish.yml`; immutable tag/OIDC gates; 0.2.1 publication remains pending                                    |
 | SV-ARCH-008 | Implemented | `tests/architecture.test.ts`; `pnpm check:architecture` gate                                                                        |
 | SV-ARCH-009 | Implemented | `scripts/architecture-fixtures`; dump-name and production-import cases                                                              |
 | SV-CFG-001  | Implemented | `src/config.ts`; neutral profiles; five consumer configs                                                                            |
@@ -32,7 +32,7 @@
 | SV-DOC-001  | Implemented | `src/commands/init.ts`                                                                                                              |
 | SV-DOC-002  | Implemented | `src/commands/doctor.ts`; `src/commands/doctor-qmd.ts` native-module probe                                                          |
 | SV-DOC-003  | Implemented | `src/commands/doctor.ts` `--fix`                                                                                                    |
-| SV-DOC-004  | Implemented | `src/commands/doctor-files.ts`; public CLI regression `src/commands/doctor-files.spec.ts`                                           |
+| SV-DOC-004  | Implemented | `src/commands/doctor-files.ts`;6 CLI regressions; packed0.2.1 on Node22 accepts Terminal with10passes/1intentional warning          |
 | SV-QMD-001  | Implemented | `src/commands/search.ts`; `.qmd/index.yml`; `src/commands/search-results.spec.ts` absolute scoped paths                             |
 | SV-QMD-002  | Implemented | `src/commands/search.ts` PATH resolution and degraded `rg` fallback; `src/commands/search.spec.ts` exit-status and warning contract |
 | SV-SKL-001  | Implemented | `src/commands/skill.ts`; `skill/spec-validator/SKILL.md`                                                                            |

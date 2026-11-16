@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.1
+
+Fix `doctor` verification-matrix discovery to honor the resolved consumer
+configuration, including nested literal files, multiple pattern-selected
+matrices and disabled verification. Missing selected matrices and SUMMARY
+remain failures, and intentional script-alias warnings retain strict behavior.
+The Node 22+ runtime and public CLI/library interfaces are unchanged.
+
 ## 0.2.0
 
 Migrate the package to a pure Node runtime: pnpm and package scripts replace

@@ -72,3 +72,17 @@ warning retained. A temporary packed public CLI (SHA256
 accepts Terminal's configured matrix with10 passes and one wrapped-alias warning;
 Terminal manifest, lock, workflows and WIP are unchanged. No package is published
 or consumer dependency adopted by this source qualification.
+
+## 0.2.1 release preparation
+
+The patch candidate packages SV-DOC-004 from merged source `5094d832`.
+Current-version frozen install, check, all92 tests, build/runtime/spec/publint
+and formatting pass. The inspected0.2.1 tarball SHA256 is
+`c463e7e638f2266e1a71e3f81212cff27d968452003258fa761c6f7604d300b0`.
+Its extracted CLI installs production dependencies from npm and executes on the
+official checksum-verified Node22.23.5 binary. Terminal doctor reports10 passes
+and its intentional wrapped-alias warning without changing consumer inputs.
+Existing warnings, strict-mode
+failure, missing-matrix/SUMMARY rejection and Node-only contracts remain binding.
+Tag creation, trusted npm publication, signature/provenance verification and
+consumer registry adoption remain separate after the release source is merged.
