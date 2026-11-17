@@ -9,6 +9,7 @@
 | SV-GOV-005  | Implemented | `src/validators/book.ts`; `src/validators/qmd.ts`; `.gitignore`                                                                     |
 | SV-GOV-006  | Implemented | `AGENTS.md`; `src/validators/governance.ts` extras                                                                                  |
 | SV-GOV-007  | Implemented | `AGENTS.md`; portable published dependency policy                                                                                   |
+| SV-ARCH-010 | In progress | Source-owned completion contract test; pinned caller; hosted callback/no-update acceptance pending                                  |
 | SV-ARCH-001 | Implemented | `package.json` bin; linked-bin CLI regression; `src/config.ts`                                                                      |
 | SV-ARCH-002 | Implemented | `src/tracked-files.ts`                                                                                                              |
 | SV-ARCH-003 | Implemented | `src/types.ts`; `src/commands/validate.ts`                                                                                          |

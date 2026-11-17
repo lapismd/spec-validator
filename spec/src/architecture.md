@@ -156,3 +156,15 @@ The verified release tarball lives under `.release/`; artifact upload explicitly
 Configured doctor discovery is extracted into the bounded `doctor-files` command
 module. The original doctor module's counted-line budget decreases; the public
 Node CLI/build/runtime contract remains unchanged.
+
+## SV-ARCH-010 — Shared dependency completion
+
+**Requirement.** The repository MUST use the reviewed immutable coordinator callback only for
+its successful existing Check workflow while preserving the tag/OIDC publisher.
+
+### Acceptance details
+
+- The callback MUST pass only the existing explicit App secret and matching implementation/policy pins, with read-only source permissions and no candidate checkout, cache, artifact or self-trigger.
+- The existing verified npm notifier MUST remain after provenance acceptance; this adoption MUST NOT create a version job, release tag or publication.
+- The root and private workspace tool currently consume no Lapis npm dependency; a normal functional test MUST fail if that no-update shape changes, requiring source-owned intake qualification before a dependency writer is admitted.
+- Activation MAY follow source merge and successful checks under standing operator approval; ordinary reconciliation MUST report an honest no-op while no eligible dependency exists, without manufacturing release intent.

@@ -58,7 +58,7 @@
     "check:architecture": "tsx ./scripts/check-architecture.ts",
     "check:architecture:baseline": "tsx ./scripts/check-architecture.ts --write-baseline",
     "test:node": "node --import tsx --import ./src/test-setup.ts --test 'src/**/*.spec.ts'",
-    "test:architecture": "node --import tsx --test ./tests/architecture.test.ts",
+    "test:architecture": "node --import tsx --test ./tests/architecture.test.ts ./tests/dependency-completion.test.ts",
     "test:workspace": "node --import tsx --test ./packages/workspace-tools/src/workspace-tools.test.ts",
     "test:all": "pnpm run test:workspace && pnpm run test:architecture && pnpm run test:node",
     "test": "pnpm run build && pnpm run test:all",
